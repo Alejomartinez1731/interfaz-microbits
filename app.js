@@ -2,9 +2,9 @@
 // CONFIGURACIÓN DE WEBHOOKS N8N (CON PROXY LOCAL)
 // ============================================
 const CONFIG = {
-    // Usar proxy local para evitar problemas de CORS
-    baseUrl: window.location.origin + '/api/n8n',
-    // baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook', // URL directa (no funciona por CORS)
+    // Conexión directa a N8N
+    baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
+    // baseUrl: window.location.origin + '/api/n8n', // Proxy local (alternativa)
     endpoints: {
         estudiantes: '/dashboard-estudiantes',
         preguntas: '/dashboard-preguntas',
@@ -16,22 +16,7 @@ const CONFIG = {
     itemsPerPage: 10
 };
 
-// Verificar que estamos usando el servidor local (no file:// ni Live Server)
-function verificarServidorLocal() {
-    const currentHost = window.location.hostname;
-    const isLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
-    const isNotFile = window.location.protocol !== 'file:';
-    const isNotLiveServer = !window.location.port || window.location.port !== '5500';
-
-    if (!isLocal || !isNotFile || window.location.port === '5500') {
-        console.warn('⚠️ ADVERTENCIA: No estás usando el servidor local correcto.');
-        console.warn('Por favor inicia el servidor con: node server.js o node server-alt.js');
-        console.warn('Y navega a: http://localhost:3000 o http://127.0.0.1:8080');
-    }
-}
-
-// Ejecutar verificación al cargar
-verificarServidorLocal();
+// Conexión directa a N8N - sin necesidad de servidor local
 
 // ============================================
 // ESTADO DE LA APLICACIÓN
