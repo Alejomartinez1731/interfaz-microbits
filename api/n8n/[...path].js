@@ -24,10 +24,25 @@ export default async function handler(req, res) {
     // La query "path" contiene el resto de la URL
     const path = req.query.path || [];
     const pathString = Array.isArray(path) ? path.join('/') : path;
-    const queryString = new URLSearchParams(req.query).toString();
+
+    // Construir query string SIN el parámetro 'path'
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (key !== 'path') {
+        queryParams.append(key, value);
+      }
+    }
+    const queryString = queryParams.toString();
+
     const n8nUrl = `${N8N_BASE_URL}/${pathString}${queryString ? '?' + queryString : ''}`;
 
-    console.log('Proxying to:', n8nUrl);
+    console.log('=== DEBUG N8N PROXY ===');
+    console.log('Request URL:', req.url);
+    console.log('Path param:', path);
+    console.log('Path string:', pathString);
+    console.log('Query params:', Object.fromEntries(queryParams));
+    console.log('Final N8N URL:', n8nUrl);
+    console.log('=======================');
 
     // Hacer la petición a N8N
     const response = await fetch(n8nUrl, {
