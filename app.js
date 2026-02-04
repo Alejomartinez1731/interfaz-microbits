@@ -142,32 +142,44 @@ async function cargarTodosDatos() {
     try {
         console.log('🔄 Cargando datos para curso:', state.cursoActual);
 
-        // Cargar todos los datos en paralelo
-        const [estudiantes, preguntas, temas, contador] = await Promise.all([
+        // Cargar datos independientemente (si uno falla, los otros continúan)
+        const resultados = await Promise.allSettled([
             fetchData(CONFIG.endpoints.estudiantes, { curso: state.cursoActual }),
             fetchData(CONFIG.endpoints.preguntas, { curso: state.cursoActual }),
             fetchData(CONFIG.endpoints.temas, { curso: state.cursoActual }),
             fetchData(CONFIG.endpoints.contador, { curso: state.cursoActual })
         ]);
 
-        state.datos.estudiantes = estudiantes || [];
-        state.datos.preguntas = preguntas || [];
-        state.datos.temas = temas || [];
-        state.datos.contador = contador || [];
+        // Procesar cada resultado independientemente
+        state.datos.estudiantes = resultados[0].status === 'fulfilled' ? resultados[0].value : [];
+        state.datos.preguntas = resultados[1].status === 'fulfilled' ? resultados[1].value : [];
+        state.datos.temas = resultados[2].status === 'fulfilled' ? resultados[2].value : [];
+        state.datos.contador = resultados[3].status === 'fulfilled' ? resultados[3].value : [];
 
-        actualizarMetricas();
-        renderizarTablaActual();
-
-        mostrarToast('Datos actualizados correctamente', 'success');
-    } catch (error) {
-        console.error('❌ Error cargando datos:', error);
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack
+        // Mostrar errores individuales si los hay
+        resultados.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                const endpoints = ['estudiantes', 'preguntas', 'temas', 'contador'];
+                console.warn(`⚠️ Error cargando ${endpoints[index]}:`, result.reason);
+            }
         });
-        mostrarToast(`Error: ${error.message}`, 'error');
 
-        // Datos de ejemplo para desarrollo
+        // Verificar si tenemos al menos algunos datos
+        const tieneDatos = state.datos.estudiantes.length > 0 ||
+                          state.datos.preguntas.length > 0 ||
+                          state.datos.temas.length > 0;
+
+        if (tieneDatos) {
+            actualizarMetricas();
+            renderizarTablaActual();
+            mostrarToast('Datos actualizados correctamente', 'success');
+        } else {
+            // Si no hay datos de ningún endpoint, cargar ejemplos
+            cargarDatosEjemplo();
+        }
+    } catch (error) {
+        console.error('❌ Error general cargando datos:', error);
+        mostrarToast(`Error: ${error.message}`, 'error');
         cargarDatosEjemplo();
     } finally {
         mostrarLoading(false);
