@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Docentes - Microbits Academy</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">MB</div>
+                <div class="header-info">
+                    <h1 id="curso-titulo">Seleccione un curso</h1>
+                    <span class="fecha" id="fecha-actual"></span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="curso-selector">
+                    <label for="curso-select">Curso:</label>
+                    <select id="curso-select">
+                        <option value="">-- Seleccionar curso --</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Métricas -->
+        <section class="metricas-container">
+            <div class="metrica-card">
+                <div class="metrica-icon blue">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="metrica-info">
+                    <span class="metrica-valor" id="estudiantes-activos">0</span>
+                    <span class="metrica-label">Estudiantes Activos</span>
+                </div>
+            </div>
+            <div class="metrica-card">
+                <div class="metrica-icon cyan">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="metrica-info">
+                    <span class="metrica-valor" id="preguntas-totales">0</span>
+                    <span class="metrica-label">Preguntas Totales</span>
+                </div>
+            </div>
+            <div class="metrica-card">
+                <div class="metrica-icon orange">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="metrica-info">
+                    <span class="metrica-valor" id="promedio-preguntas">0</span>
+                    <span class="metrica-label">Promedio Preguntas</span>
+                </div>
+            </div>
+            <div class="metrica-card">
+                <div class="metrica-icon green">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="metrica-info">
+                    <span class="metrica-valor" id="temas-consultados">0</span>
+                    <span class="metrica-label">Temas Consultados</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabs de navegación -->
+        <section class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" data-tab="estudiantes">
+                    <i class="fas fa-users"></i>
+                    Estudiantes Habilitados
+                </button>
+                <button class="tab" data-tab="preguntas">
+                    <i class="fas fa-question-circle"></i>
+                    Preguntas Frecuentes
+                </button>
+                <button class="tab" data-tab="activos">
+                    <i class="fas fa-trophy"></i>
+                    Estudiantes Más Activos
+                </button>
+                <button class="tab" data-tab="temas">
+                    <i class="fas fa-tags"></i>
+                    Temas Más Consultados
+                </button>
+            </div>
+        </section>
+
+        <!-- Contenido de las tablas -->
+        <section class="tabla-container">
+            <!-- Barra de búsqueda -->
+            <div class="tabla-header">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Buscar por nombre...">
+                </div>
+                <div class="tabla-actions">
+                    <button class="btn-refresh" id="btn-refresh">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de Estudiantes Habilitados -->
+            <div class="tabla-content" id="tabla-estudiantes">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Chat ID</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-estudiantes">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+                <div class="tabla-empty" id="empty-estudiantes">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay estudiantes registrados</p>
+                </div>
+            </div>
+
+            <!-- Tabla de Preguntas Frecuentes -->
+            <div class="tabla-content hidden" id="tabla-preguntas">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Chat ID</th>
+                            <th>Pregunta</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-preguntas">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+                <div class="tabla-empty" id="empty-preguntas">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay preguntas registradas</p>
+                </div>
+            </div>
+
+            <!-- Tabla de Estudiantes Más Activos (Contador) -->
+            <div class="tabla-content hidden" id="tabla-activos">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Posición</th>
+                            <th>Nombre</th>
+                            <th>Chat ID</th>
+                            <th>Preguntas Realizadas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-activos">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+                <div class="tabla-empty" id="empty-activos">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay datos de actividad</p>
+                </div>
+            </div>
+
+            <!-- Tabla de Temas Más Consultados -->
+            <div class="tabla-content hidden" id="tabla-temas">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tema</th>
+                            <th>Consultas</th>
+                            <th>Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-temas">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+                <div class="tabla-empty" id="empty-temas">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay temas registrados</p>
+                </div>
+            </div>
+
+            <!-- Paginación -->
+            <div class="paginacion" id="paginacion">
+                <button class="btn-pag" id="btn-anterior" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="pag-info" id="pag-info">Página 1 de 1</span>
+                <button class="btn-pag" id="btn-siguiente" disabled>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay hidden" id="loading">
+            <div class="spinner"></div>
+            <p>Cargando datos...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
