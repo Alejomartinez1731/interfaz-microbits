@@ -39,8 +39,21 @@ export default async function handler(req, res) {
       body: req.method === 'POST' ? JSON.stringify(req.body) : undefined
     });
 
-    // Obtener la respuesta
-    const data = await response.json();
+    // Obtener la respuesta de forma segura
+    const contentType = response.headers.get('content-type') || '';
+    let data;
+
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      // Si no es JSON, intentar parsearlo, si falla devolver texto plano
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
+    }
 
     // Enviar la respuesta al cliente
     res.status(response.status).json(data);
