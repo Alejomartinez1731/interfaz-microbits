@@ -22,3 +22,8 @@ Thumbs.db
 # Archivos de instrucciones (opcionales)
 COMO-USAR.md
 INSTRUCCIONES.txt
+PASOS-GITHUB.md
+
+# Claude settings
+.claude/
+

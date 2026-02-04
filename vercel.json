@@ -1,15 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/n8n/:path*",
-      "destination": "/api/n8n-proxy"
+      "destination": "/api/n8n/:path*"
     }
   ]
 }
