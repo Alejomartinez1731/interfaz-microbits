@@ -6,6 +6,7 @@
     <title>Dashboard Docentes Microbits Academy</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -30,43 +31,72 @@
 
         <!-- Métricas -->
         <section class="metricas-container">
-            <div class="metrica-card">
+            <div class="metrica-card" data-metrica="estudiantes">
                 <div class="metrica-icon blue">
                     <i class="fas fa-user-graduate"></i>
                 </div>
                 <div class="metrica-info">
                     <span class="metrica-valor" id="estudiantes-activos">0</span>
                     <span class="metrica-label">Estudiantes Activos</span>
+                    <span class="metrica-detail" id="estudiantes-detail"></span>
+                </div>
+                <div class="metrica-expand">
+                    <i class="fas fa-chevron-down"></i>
                 </div>
             </div>
-            <div class="metrica-card">
+            <div class="metrica-card" data-metrica="preguntas">
                 <div class="metrica-icon cyan">
                     <i class="fas fa-comments"></i>
                 </div>
                 <div class="metrica-info">
                     <span class="metrica-valor" id="preguntas-totales">0</span>
                     <span class="metrica-label">Preguntas Totales</span>
+                    <span class="metrica-detail" id="preguntas-detail"></span>
+                </div>
+                <div class="metrica-expand">
+                    <i class="fas fa-chevron-down"></i>
                 </div>
             </div>
-            <div class="metrica-card">
+            <div class="metrica-card" data-metrica="promedio">
                 <div class="metrica-icon orange">
                     <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="metrica-info">
                     <span class="metrica-valor" id="promedio-preguntas">0</span>
                     <span class="metrica-label">Promedio Preguntas</span>
+                    <span class="metrica-detail" id="promedio-detail"></span>
+                </div>
+                <div class="metrica-expand">
+                    <i class="fas fa-chevron-down"></i>
                 </div>
             </div>
-            <div class="metrica-card">
+            <div class="metrica-card" data-metrica="temas">
                 <div class="metrica-icon green">
                     <i class="fas fa-book"></i>
                 </div>
                 <div class="metrica-info">
                     <span class="metrica-valor" id="temas-consultados">0</span>
                     <span class="metrica-label">Temas Consultados</span>
+                    <span class="metrica-detail" id="temas-detail"></span>
+                </div>
+                <div class="metrica-expand">
+                    <i class="fas fa-chevron-down"></i>
                 </div>
             </div>
         </section>
+
+        <!-- Panel de Desglose de Métricas -->
+        <div class="metricas-detail-panel hidden" id="metricas-detail-panel">
+            <div class="detail-panel-header">
+                <h3 id="detail-panel-title">Desglose de Métricas</h3>
+                <button class="btn-close-detail" id="btn-close-detail">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="detail-panel-content" id="detail-panel-content">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
 
         <!-- Tabs de navegación -->
         <section class="tabs-container">
@@ -150,6 +180,11 @@
 
             <!-- Tabla de Estudiantes Más Activos (Contador) -->
             <div class="tabla-content hidden" id="tabla-activos">
+                <!-- Gráfico de Estudiantes Activos -->
+                <div class="chart-container" id="chart-activos-container">
+                    <canvas id="chart-activos"></canvas>
+                </div>
+
                 <table>
                     <thead>
                         <tr>
@@ -171,6 +206,11 @@
 
             <!-- Tabla de Temas Más Consultados -->
             <div class="tabla-content hidden" id="tabla-temas">
+                <!-- Gráfico de Temas -->
+                <div class="chart-container" id="chart-temas-container">
+                    <canvas id="chart-temas"></canvas>
+                </div>
+
                 <table>
                     <thead>
                         <tr>
