@@ -3,13 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Docentes Microbits Academy</title>
+    <title>Microbits Institut - Dashboard Docentes</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div class="dashboard-container">
+    <!-- Pantalla de Inicio -->
+    <div class="home-container" id="home-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-logo">
+                    <div class="logo-large">MB</div>
+                </div>
+                <h1 class="hero-title">Bienvenido a Microbits Institut</h1>
+                <h2 class="hero-subtitle">Centro de formación desde 1989</h2>
+                <p class="hero-description">
+                    Centro de formación integral fundado en 1989 en Reus, Tarragona. Gracias a la confianza de nuestros alumnos,
+                    seguimos ampliando nuestra oferta formativa con un objetivo claro: ofrecer enseñanza de calidad que responde
+                    a las necesidades del mercado laboral actual.
+                </p>
+
+                <!-- Badges de Identidad -->
+                <div class="identity-badges">
+                    <div class="identity-badge">
+                        <div class="badge-icon gold">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="badge-info">
+                            <span class="badge-value">4.9/5</span>
+                            <span class="badge-label">Valoración</span>
+                        </div>
+                    </div>
+                    <div class="identity-badge">
+                        <div class="badge-icon blue">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="badge-info">
+                            <span class="badge-value">+35</span>
+                            <span class="badge-label">Años experiencia</span>
+                        </div>
+                    </div>
+                    <div class="identity-badge">
+                        <div class="badge-icon purple">
+                            <i class="fas fa-landmark"></i>
+                        </div>
+                        <div class="badge-info">
+                            <span class="badge-value">SOC</span>
+                            <span class="badge-label">Centro Oficial</span>
+                        </div>
+                    </div>
+                    <div class="identity-badge">
+                        <div class="badge-icon green">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="badge-info">
+                            <span class="badge-value">✓</span>
+                            <span class="badge-label">Homologado Generalitat</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contenedor Principal -->
+        <div class="home-main">
+            <!-- Sección de Cursos -->
+            <section class="courses-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        Cursos Disponibles
+                    </h3>
+                    <p class="section-subtitle">Selecciona un curso para ver su dashboard</p>
+                </div>
+                <div class="courses-list" id="courses-list">
+                    <!-- Los cursos se cargarán dinámicamente -->
+                    <div class="courses-loading">
+                        <div class="spinner"></div>
+                        <p>Cargando cursos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección de Calendario -->
+            <section class="calendar-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-calendar-days"></i>
+                        Calendario Académico
+                    </h3>
+                    <p class="section-subtitle">Gestiona eventos y festividades de Cataluña</p>
+                </div>
+                <div class="calendar-container">
+                    <!-- Controles del calendario -->
+                    <div class="calendar-controls">
+                        <button class="calendar-nav-btn" id="cal-prev-month">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="calendar-current-month" id="cal-current-month">
+                            Enero 2026
+                        </div>
+                        <button class="calendar-nav-btn" id="cal-next-month">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="calendar-today-btn" id="cal-today">
+                            Hoy
+                        </button>
+                    </div>
+
+                    <!-- Grid del calendario -->
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <div class="calendar-weekday">Dom</div>
+                            <div class="calendar-weekday">Lun</div>
+                            <div class="calendar-weekday">Mar</div>
+                            <div class="calendar-weekday">Mié</div>
+                            <div class="calendar-weekday">Jue</div>
+                            <div class="calendar-weekday">Vie</div>
+                            <div class="calendar-weekday">Sáb</div>
+                        </div>
+                        <div class="calendar-days" id="calendar-days">
+                            <!-- Los días se generarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Panel de eventos -->
+                    <div class="calendar-events-panel">
+                        <div class="events-panel-header">
+                            <h4>
+                                <i class="fas fa-list-check"></i>
+                                Eventos del día
+                            </h4>
+                            <button class="btn-add-event" id="btn-add-event">
+                                <i class="fas fa-plus"></i>
+                                Nuevo Evento
+                            </button>
+                        </div>
+                        <div class="events-list" id="events-list">
+                            <div class="events-empty">
+                                <i class="fas fa-calendar-xmark"></i>
+                                <p>No hay eventos para este día</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Dashboard Container (oculto inicialmente) -->
+    <div class="dashboard-container hidden" id="dashboard-container">
         <!-- Header -->
         <header class="header">
             <div class="header-left">
@@ -249,6 +394,80 @@
 
         <!-- Toast Notifications -->
         <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <!-- Botón flotante para volver al inicio -->
+    <button class="fab-home" id="fab-home" title="Volver al inicio">
+        <i class="fas fa-home"></i>
+    </button>
+
+    <!-- Modal para agregar/editar eventos -->
+    <div class="modal-overlay hidden" id="event-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-title">
+                    <i class="fas fa-calendar-plus"></i>
+                    Nuevo Evento
+                </h3>
+                <button class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="event-form">
+                <div class="form-group">
+                    <label for="event-title">
+                        <i class="fas fa-heading"></i>
+                        Título del evento
+                    </label>
+                    <input type="text" id="event-title" required placeholder="Ej: Examen parcial">
+                </div>
+                <div class="form-group">
+                    <label for="event-date">
+                        <i class="fas fa-calendar"></i>
+                        Fecha
+                    </label>
+                    <input type="date" id="event-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-type">
+                        <i class="fas fa-tag"></i>
+                        Tipo de evento
+                    </label>
+                    <select id="event-type" required>
+                        <option value="exam">📝 Examen/Parcial</option>
+                        <option value="practice">💻 Práctica</option>
+                        <option value="meeting">👥 Reunión</option>
+                        <option value="holiday">🎉 Festividad</option>
+                        <option value="other">📌 Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="event-description">
+                        <i class="fas fa-align-left"></i>
+                        Descripción
+                    </label>
+                    <textarea id="event-description" rows="3" placeholder="Descripción opcional del evento..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="event-course">
+                        <i class="fas fa-graduation-cap"></i>
+                        Curso (opcional)
+                    </label>
+                    <select id="event-course">
+                        <option value="">-- Seleccionar curso --</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal btn-secondary" id="modal-cancel">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-modal btn-primary">
+                        <i class="fas fa-save"></i>
+                        Guardar Evento
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="app.js"></script>

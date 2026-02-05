@@ -174,7 +174,7 @@ function inicializarGraficoActivos(datos) {
                 },
                 title: {
                     display: true,
-                    text: '🏆 Top 10 Estudiantes Más Activos',
+                    text: '🏆 Top 10 Estudiantes por Preguntas',
                     color: 'rgba(255, 255, 255, 0.9)',
                     font: {
                         size: 18,
@@ -272,18 +272,460 @@ let state = {
         pagina: 1,
         totalPaginas: 1
     },
-    busqueda: ''
+    busqueda: '',
+    // Estado de navegación
+    vistaActual: 'home', // 'home' o 'dashboard'
+    // Estado del calendario
+    calendario: {
+        fechaActual: new Date(),
+        mesActual: new Date().getMonth(),
+        añoActual: new Date().getFullYear(),
+        diaSeleccionado: new Date().getDate(),
+        eventos: [],
+        festivosCatalunya: []
+    }
 };
 
 // ============================================
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
+    inicializarNavegacion();
+    inicializarCalendario();
     inicializarFecha();
     inicializarEventos();
     inicializarMetricasInteractivas();
     cargarCursos();
+    cargarEventosCalendario();
 });
+
+// ============================================
+// NAVEGACIÓN
+// ============================================
+function inicializarNavegacion() {
+    // Botón FAB para volver al inicio
+    const fabHome = document.getElementById('fab-home');
+    fabHome.addEventListener('click', () => {
+        irAInicio();
+    });
+}
+
+function irAInicio() {
+    state.vistaActual = 'home';
+    document.getElementById('home-container').classList.remove('hidden');
+    document.getElementById('dashboard-container').classList.add('hidden');
+    document.getElementById('fab-home').classList.remove('visible');
+}
+
+function irADashboard(cursoId, cursoNombre) {
+    state.vistaActual = 'dashboard';
+    state.cursoActual = cursoId;
+
+    // Actualizar el título del dashboard
+    document.getElementById('curso-titulo').textContent = cursoNombre;
+
+    // Seleccionar el curso en el dropdown
+    const select = document.getElementById('curso-select');
+    select.value = cursoId;
+
+    // Ocultar inicio y mostrar dashboard
+    document.getElementById('home-container').classList.add('hidden');
+    document.getElementById('dashboard-container').classList.remove('hidden');
+    document.getElementById('fab-home').classList.add('visible');
+
+    // Cargar datos del curso
+    cargarTodosDatos();
+}
+
+// ============================================
+// CALENDARIO
+// ============================================
+function inicializarCalendario() {
+    // Generar festivos de Cataluña
+    generarFestivosCatalunya();
+
+    // Event listeners de navegación
+    document.getElementById('cal-prev-month').addEventListener('click', () => {
+        state.calendario.mesActual--;
+        if (state.calendario.mesActual < 0) {
+            state.calendario.mesActual = 11;
+            state.calendario.añoActual--;
+        }
+        renderizarCalendario();
+    });
+
+    document.getElementById('cal-next-month').addEventListener('click', () => {
+        state.calendario.mesActual++;
+        if (state.calendario.mesActual > 11) {
+            state.calendario.mesActual = 0;
+            state.calendario.añoActual++;
+        }
+        renderizarCalendario();
+    });
+
+    document.getElementById('cal-today').addEventListener('click', () => {
+        const hoy = new Date();
+        state.calendario.mesActual = hoy.getMonth();
+        state.calendario.añoActual = hoy.getFullYear();
+        state.calendario.diaSeleccionado = hoy.getDate();
+        renderizarCalendario();
+        renderizarEventosDia();
+    });
+
+    // Modal de eventos
+    document.getElementById('btn-add-event').addEventListener('click', () => {
+        abrirModalEvento();
+    });
+
+    document.getElementById('modal-close').addEventListener('click', () => {
+        cerrarModalEvento();
+    });
+
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+        cerrarModalEvento();
+    });
+
+    document.getElementById('event-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        guardarEvento();
+    });
+
+    // Renderizar calendario inicial
+    renderizarCalendario();
+    renderizarEventosDia();
+}
+
+function generarFestivosCatalunya() {
+    const año = new Date().getFullYear();
+
+    // Festivos nacionales fijos
+    const festivos = [
+        { fecha: `${año}-01-01`, nombre: 'Año Nuevo' },
+        { fecha: `${año}-01-06`, nombre: 'Epifanía del Señor' },
+        { fecha: `${año}-05-01`, nombre: 'Fiesta del Trabajo' },
+        { fecha: `${año}-08-15`, nombre: 'Asunción de la Virgen' },
+        { fecha: `${año}-11-01`, nombre: 'Todos los Santos' },
+        { fecha: `${año}-12-06`, nombre: 'Día de la Constitución' },
+        { fecha: `${año}-12-08`, nombre: 'Inmaculada Concepción' },
+        { fecha: `${año}-12-25`, nombre: 'Natividad del Señor' },
+        { fecha: `${año}-12-26`, nombre: 'Sant Esteve' }
+    ];
+
+    // Festivos de Cataluña
+    festivos.push(
+        { fecha: `${año}-02-12`, nombre: 'Santa Eulàlia' },
+        { fecha: `${año}-06-24`, nombre: 'Sant Joan' },
+        { fecha: `${año}-09-11`, nombre: 'Diada de Catalunya' }
+    );
+
+    // Semana Santa (cálculo aproximado)
+    // Pascua = Primer domingo después de la luna llena siguiente al equinoccio de primavera
+    const pascua = calcularPascua(año);
+
+    // Jueves Santo (3 días antes)
+    const juevesSanto = new Date(pascua);
+    juevesSanto.setDate(juevesSanto.getDate() - 3);
+
+    // Viernes Santo (2 días antes)
+    const viernesSanto = new Date(pascua);
+    viernesSanto.setDate(viernesSanto.getDate() - 2);
+
+    // Lunes de Pascua (1 día después)
+    const lunesPascua = new Date(pascua);
+    lunesPascua.setDate(lunesPascua.getDate() + 1);
+
+    festivos.push(
+        { fecha: formatearFechaISO(juevesSanto), nombre: 'Jueves Santo' },
+        { fecha: formatearFechaISO(viernesSanto), nombre: 'Viernes Santo' },
+        { fecha: formatearFechaISO(lunesPascua), nombre: 'Lunes de Pascua' }
+    );
+
+    state.calendario.festivosCatalunya = festivos;
+}
+
+function calcularPascua(año) {
+    // Método de Gauss para calcular la fecha de Pascua
+    const a = año % 19;
+    const b = Math.floor(año / 100);
+    const c = año % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+
+    const mes = Math.floor((h + l - 7 * m + 114) / 31);
+    const dia = ((h + l - 7 * m + 114) % 31) + 1;
+
+    return new Date(año, mes - 1, dia);
+}
+
+function formatearFechaISO(fecha) {
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${año}-${mes}-${dia}`;
+}
+
+function renderizarCalendario() {
+    const container = document.getElementById('calendar-days');
+    const monthLabel = document.getElementById('cal-current-month');
+
+    console.log('📅 Renderizando calendario');
+    console.log('📅 Container encontrado:', container);
+    console.log('📅 Mes:', state.calendario.mesActual, 'Año:', state.calendario.añoActual);
+
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    monthLabel.textContent = `${meses[state.calendario.mesActual]} ${state.calendario.añoActual}`;
+
+    // Primer día del mes y número de días
+    const primerDia = new Date(state.calendario.añoActual, state.calendario.mesActual, 1).getDay();
+    const diasMes = new Date(state.calendario.añoActual, state.calendario.mesActual + 1, 0).getDate();
+    const diasMesAnterior = new Date(state.calendario.añoActual, state.calendario.mesActual, 0).getDate();
+
+    let html = '';
+
+    // Días del mes anterior
+    for (let i = primerDia - 1; i >= 0; i--) {
+        const dia = diasMesAnterior - i;
+        html += `<div class="calendar-day other-month">${dia}</div>`;
+    }
+
+    // Días del mes actual
+    const hoy = new Date();
+    for (let dia = 1; dia <= diasMes; dia++) {
+        const fecha = `${state.calendario.añoActual}-${String(state.calendario.mesActual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
+        const esHoy = dia === hoy.getDate() &&
+                     state.calendario.mesActual === hoy.getMonth() &&
+                     state.calendario.añoActual === hoy.getFullYear();
+
+        const esFestivo = state.calendario.festivosCatalunya.some(f => f.fecha === fecha);
+        const tieneEvento = state.calendario.eventos.some(e => e.fecha === fecha);
+        const esSeleccionado = dia === state.calendario.diaSeleccionado;
+
+        let classes = 'calendar-day';
+        if (esHoy) classes += ' today';
+        if (esFestivo) classes += ' holiday';
+        if (tieneEvento) classes += ' has-event';
+        if (esSeleccionado) classes += ' selected';
+
+        html += `<div class="${classes}" data-dia="${dia}">${dia}</div>`;
+    }
+
+    // Días del mes siguiente
+    const totalCeldas = 42; // 6 filas completas
+    const diasRenderizados = primerDia + diasMes;
+    const diasSiguiente = totalCeldas - diasRenderizados;
+
+    for (let dia = 1; dia <= diasSiguiente; dia++) {
+        html += `<div class="calendar-day other-month">${dia}</div>`;
+    }
+
+    container.innerHTML = html;
+
+    // Agregar event listeners a los días
+    const diasClickeables = container.querySelectorAll('.calendar-day:not(.other-month)');
+    console.log('📅 Días clickeables encontrados:', diasClickeables.length);
+
+    diasClickeables.forEach(el => {
+        el.addEventListener('click', () => {
+            console.log('📅 Día clickeado:', el.dataset.dia);
+            state.calendario.diaSeleccionado = parseInt(el.dataset.dia);
+            renderizarCalendario();
+            renderizarEventosDia();
+        });
+    });
+
+    console.log('✅ Calendario renderizado correctamente');
+}
+
+function renderizarEventosDia() {
+    const container = document.getElementById('events-list');
+    const fecha = `${state.calendario.añoActual}-${String(state.calendario.mesActual + 1).padStart(2, '0')}-${String(state.calendario.diaSeleccionado).padStart(2, '0')}`;
+
+    // Buscar festivos
+    const festivo = state.calendario.festivosCatalunya.find(f => f.fecha === fecha);
+
+    // Buscar eventos del día
+    const eventos = state.calendario.eventos.filter(e => e.fecha === fecha);
+
+    if (!festivo && eventos.length === 0) {
+        container.innerHTML = `
+            <div class="events-empty">
+                <i class="fas fa-calendar-xmark"></i>
+                <p>No hay eventos para este día</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+
+    // Renderizar festivo si existe
+    if (festivo) {
+        html += `
+            <div class="event-item">
+                <div class="event-item-icon holiday">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div class="event-item-content">
+                    <div class="event-item-title">${festivo.nombre}</div>
+                    <div class="event-item-description">Festivo en Cataluña</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Renderizar eventos
+    eventos.forEach(evento => {
+        const iconos = {
+            exam: 'fa-file-alt',
+            practice: 'fa-laptop-code',
+            meeting: 'fa-users',
+            holiday: 'fa-umbrella-beach',
+            other: 'fa-thumbtack'
+        };
+
+        const icon = iconos[evento.tipo] || iconos.other;
+
+        html += `
+            <div class="event-item" data-id="${evento.id}">
+                <div class="event-item-icon ${evento.tipo}">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="event-item-content">
+                    <div class="event-item-title">${evento.titulo}</div>
+                    ${evento.descripcion ? `<div class="event-item-description">${evento.descripcion}</div>` : ''}
+                    <div class="event-item-meta">
+                        ${evento.curso ? `<span class="event-item-course"><i class="fas fa-graduation-cap"></i> ${evento.curso}</span>` : ''}
+                        <span class="event-item-time"><i class="fas fa-calendar-day"></i> ${formatearFechaMostrar(evento.fecha)}</span>
+                    </div>
+                </div>
+                <div class="event-item-actions">
+                    <button class="event-action-btn edit" onclick="editarEvento('${evento.id}')" title="Editar">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="event-action-btn delete" onclick="eliminarEvento('${evento.id}')" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function formatearFechaMostrar(fechaISO) {
+    const fecha = new Date(fechaISO + 'T00:00:00');
+    const opciones = { day: 'numeric', month: 'short', year: 'numeric' };
+    return fecha.toLocaleDateString('es-ES', opciones);
+}
+
+// ============================================
+// GESTIÓN DE EVENTOS
+// ============================================
+function cargarEventosCalendario() {
+    const guardados = localStorage.getItem('microbits-calendario-eventos');
+    if (guardados) {
+        state.calendario.eventos = JSON.parse(guardados);
+    }
+}
+
+function guardarEventosCalendario() {
+    localStorage.setItem('microbits-calendario-eventos', JSON.stringify(state.calendario.eventos));
+}
+
+function abrirModalEvento(evento = null) {
+    const modal = document.getElementById('event-modal');
+    const form = document.getElementById('event-form');
+    const title = document.getElementById('modal-title');
+
+    // Resetear formulario
+    form.reset();
+
+    if (evento) {
+        // Editar evento existente
+        title.innerHTML = '<i class="fas fa-calendar-edit"></i> Editar Evento';
+        document.getElementById('event-title').value = evento.titulo;
+        document.getElementById('event-date').value = evento.fecha;
+        document.getElementById('event-type').value = evento.tipo;
+        document.getElementById('event-description').value = evento.descripcion || '';
+        document.getElementById('event-course').value = evento.curso || '';
+        form.dataset.editId = evento.id;
+    } else {
+        // Nuevo evento
+        title.innerHTML = '<i class="fas fa-calendar-plus"></i> Nuevo Evento';
+        const fecha = `${state.calendario.añoActual}-${String(state.calendario.mesActual + 1).padStart(2, '0')}-${String(state.calendario.diaSeleccionado).padStart(2, '0')}`;
+        document.getElementById('event-date').value = fecha;
+        delete form.dataset.editId;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function cerrarModalEvento() {
+    const modal = document.getElementById('event-modal');
+    modal.classList.add('hidden');
+}
+
+function guardarEvento() {
+    const form = document.getElementById('event-form');
+    const editId = form.dataset.editId;
+
+    const evento = {
+        id: editId || Date.now().toString(),
+        titulo: document.getElementById('event-title').value,
+        fecha: document.getElementById('event-date').value,
+        tipo: document.getElementById('event-type').value,
+        descripcion: document.getElementById('event-description').value,
+        curso: document.getElementById('event-course').value || null
+    };
+
+    if (editId) {
+        // Actualizar evento existente
+        const index = state.calendario.eventos.findIndex(e => e.id === editId);
+        if (index !== -1) {
+            state.calendario.eventos[index] = evento;
+        }
+        mostrarToast('Evento actualizado correctamente', 'success');
+    } else {
+        // Crear nuevo evento
+        state.calendario.eventos.push(evento);
+        mostrarToast('Evento creado correctamente', 'success');
+    }
+
+    guardarEventosCalendario();
+    cerrarModalEvento();
+    renderizarCalendario();
+    renderizarEventosDia();
+}
+
+function editarEvento(id) {
+    const evento = state.calendario.eventos.find(e => e.id === id);
+    if (evento) {
+        abrirModalEvento(evento);
+    }
+}
+
+function eliminarEvento(id) {
+    if (confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+        state.calendario.eventos = state.calendario.eventos.filter(e => e.id !== id);
+        guardarEventosCalendario();
+        renderizarCalendario();
+        renderizarEventosDia();
+        mostrarToast('Evento eliminado correctamente', 'success');
+    }
+}
 
 function inicializarMetricasInteractivas() {
     // Event listeners para las tarjetas de métricas
@@ -738,7 +1180,7 @@ function inicializarFecha() {
 }
 
 function inicializarEventos() {
-    // Selector de curso
+    // Selector de curso (en el dashboard)
     document.getElementById('curso-select').addEventListener('change', (e) => {
         state.cursoActual = e.target.value;
         document.getElementById('curso-titulo').textContent =
@@ -791,33 +1233,181 @@ function inicializarEventos() {
 // FUNCIONES DE CARGA DE DATOS
 // ============================================
 async function cargarCursos() {
-    try {
-        // Por ahora, cursos de ejemplo. Después se cargará desde n8n
-        const cursos = await fetchData(CONFIG.endpoints.cursos);
+    console.log('🔄 Iniciando carga de cursos desde N8N...');
 
+    // Mostrar indicador de carga
+    const container = document.getElementById('courses-list');
+    if (container) {
+        container.innerHTML = `
+            <div class="courses-loading">
+                <div class="spinner"></div>
+                <p>Cargando cursos...</p>
+            </div>
+        `;
+    }
+
+    try {
+        // Intentar cargar desde el endpoint de N8N
+        const cursos = await fetchData(CONFIG.endpoints.cursos);
+        console.log('✅ Cursos recibidos de N8N:', cursos);
+
+        if (!cursos || cursos.length === 0) {
+            throw new Error('No se recibieron cursos del endpoint');
+        }
+
+        // Cargar estudiantes de cada curso
+        console.log('📊 Cargando estudiantes de cada curso...');
+        const cursosConEstudiantes = await Promise.allSettled(
+            cursos.map(async (curso) => {
+                const cursoId = curso.id || curso.nombre;
+                try {
+                    const estudiantes = await fetchData(CONFIG.endpoints.estudiantes, { curso: cursoId });
+                    const totalEstudiantes = estudiantes ? estudiantes.length : 0;
+                    const estudiantesHabilitados = estudiantes ?
+                        estudiantes.filter(e => e.habilitado !== false && e.habilitado !== 'false').length : 0;
+
+                    console.log(`📚 ${curso.nombre}: ${estudiantesHabilitados}/${totalEstudiantes} estudiantes habilitados`);
+
+                    return {
+                        ...curso,
+                        totalEstudiantes,
+                        estudiantesHabilitados
+                    };
+                } catch (error) {
+                    console.warn(`⚠️ No se pudieron cargar estudiantes para ${curso.nombre}:`, error);
+                    return {
+                        ...curso,
+                        totalEstudiantes: 0,
+                        estudiantesHabilitados: 0
+                    };
+                }
+            })
+        );
+
+        // Procesar resultados
+        const cursosProcesados = cursosConEstudiantes.map((resultado, index) => {
+            if (resultado.status === 'fulfilled') {
+                return resultado.value;
+            } else {
+                return {
+                    ...cursos[index],
+                    totalEstudiantes: 0,
+                    estudiantesHabilitados: 0
+                };
+            }
+        });
+
+        console.log('✅ Cursos con estudiantes:', cursosProcesados);
+
+        // Cargar en el select del dashboard
         const select = document.getElementById('curso-select');
-        cursos.forEach(curso => {
+        select.innerHTML = '<option value="">-- Seleccionar curso --</option>';
+
+        cursosProcesados.forEach(curso => {
             const option = document.createElement('option');
             option.value = curso.id || curso.nombre;
             option.textContent = curso.nombre;
             select.appendChild(option);
         });
+
+        // Cargar también en el select del modal de eventos
+        const eventCourseSelect = document.getElementById('event-course');
+        eventCourseSelect.innerHTML = '<option value="">-- Seleccionar curso --</option>';
+
+        cursosProcesados.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso.nombre;
+            option.textContent = curso.nombre;
+            eventCourseSelect.appendChild(option);
+        });
+
+        // Renderizar en la pantalla de inicio
+        renderizarCursosInicio(cursosProcesados);
+
+        return cursosProcesados;
     } catch (error) {
-        console.error('Error cargando cursos:', error);
-        // Cursos de ejemplo para desarrollo
+        console.error('❌ Error cargando cursos desde N8N:', error);
+        mostrarToast('Error al cargar los cursos', 'error');
+
+        // Fallback a cursos de ejemplo
         const cursosEjemplo = [
-            { id: 'informatica-101', nombre: 'Informática 101' },
-            { id: 'programacion-basica', nombre: 'Programación Básica' },
-            { id: 'bases-datos', nombre: 'Bases de Datos' }
+            { id: 'informatica-101', nombre: 'Informática 101', estudiantesHabilitados: 0 },
+            { id: 'programacion-basica', nombre: 'Programación Básica', estudiantesHabilitados: 0 },
+            { id: 'bases-datos', nombre: 'Bases de Datos', estudiantesHabilitados: 0 },
+            { id: 'desarrollo-web', nombre: 'Desarrollo Web', estudiantesHabilitados: 0 },
+            { id: 'redes-sistemas', nombre: 'Redes y Sistemas', estudiantesHabilitados: 0 },
+            { id: 'ciberseguridad', nombre: 'Ciberseguridad', estudiantesHabilitados: 0 }
         ];
+
         const select = document.getElementById('curso-select');
+        select.innerHTML = '<option value="">-- Seleccionar curso --</option>';
         cursosEjemplo.forEach(curso => {
             const option = document.createElement('option');
             option.value = curso.id;
             option.textContent = curso.nombre;
             select.appendChild(option);
         });
+
+        const eventCourseSelect = document.getElementById('event-course');
+        eventCourseSelect.innerHTML = '<option value="">-- Seleccionar curso --</option>';
+        cursosEjemplo.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso.nombre;
+            option.textContent = curso.nombre;
+            eventCourseSelect.appendChild(option);
+        });
+
+        renderizarCursosInicio(cursosEjemplo);
+        return cursosEjemplo;
     }
+}
+
+function renderizarCursosInicio(cursos) {
+    const container = document.getElementById('courses-list');
+    console.log('📚 Renderizando cursos:', cursos);
+
+    // Verificar que los cursos tengan las propiedades necesarias
+    if (!cursos || cursos.length === 0) {
+        container.innerHTML = `
+            <div class="courses-loading">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>No hay cursos disponibles</p>
+            </div>
+        `;
+        return;
+    }
+
+    const html = cursos.map(curso => {
+        const cursoId = curso.id || curso.nombre || curso.nombre_curso || 'unknown';
+        const cursoNombre = curso.nombre || curso.nombre_curso || curso.curso || 'Curso sin nombre';
+        const cursoNivel = curso.nivel || curso.Nivel || 'Activo';
+
+        // Usar estudiantes habilitados
+        const numEstudiantes = curso.estudiantesHabilitados !== undefined ?
+            curso.estudiantesHabilitados :
+            (curso.totalEstudiantes || curso.alumnos || curso.Alumnos || 0);
+
+        return `
+            <div class="course-item" onclick="irADashboard('${cursoId}', '${cursoNombre}')">
+                <div class="course-item-info">
+                    <div class="course-item-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <div>
+                        <div class="course-item-name">${cursoNombre}</div>
+                        <div class="course-item-badges">
+                            <span class="course-badge">${cursoNivel}</span>
+                            <span class="course-badge">${numEstudiantes} estudiantes</span>
+                        </div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right course-arrow"></i>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
+    console.log('✅ Cursos renderizados correctamente');
 }
 
 async function cargarTodosDatos() {
@@ -1357,6 +1947,12 @@ function mostrarToast(mensaje, tipo = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// Hacer funciones accesibles globalmente para el HTML
+window.irADashboard = irADashboard;
+window.editarEvento = editarEvento;
+window.eliminarEvento = eliminarEvento;
+window.toggleEstudiante = toggleEstudiante;
 
 function limpiarDashboard() {
     state.datos = {
