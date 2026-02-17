@@ -534,7 +534,10 @@ function renderizarCalendario() {
     monthLabel.textContent = `${meses[state.calendario.mesActual]} ${state.calendario.añoActual}`;
 
     // Primer día del mes y número de días
-    const primerDia = new Date(state.calendario.añoActual, state.calendario.mesActual, 1).getDay();
+    // Convertir para que la semana empiece en LUNES (lunes=0, ..., domingo=6)
+    const getDayMondayFirst = (date) => (date.getDay() + 6) % 7;
+
+    const primerDia = getDayMondayFirst(new Date(state.calendario.añoActual, state.calendario.mesActual, 1));
     const diasMes = new Date(state.calendario.añoActual, state.calendario.mesActual + 1, 0).getDate();
     const diasMesAnterior = new Date(state.calendario.añoActual, state.calendario.mesActual, 0).getDate();
 
