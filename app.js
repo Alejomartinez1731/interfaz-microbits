@@ -2160,19 +2160,37 @@ function formatearFecha(fechaISO) {
     if (!fechaISO || fechaISO === '') return '-';
 
     try {
-        // Crear fecha desde string ISO
-        const fecha = new Date(fechaISO);
+        // Limpiar el string de caracteres problemáticos
+        const fechaLimpia = fechaISO.toString().trim();
 
-        // Verificar si la fecha es válida (getTime() devuelve NaN si es inválida)
-        if (isNaN(fecha.getTime())) {
-            console.warn('Fecha inválida (getTime es NaN):', fechaISO, 'Tipo:', typeof fechaISO);
+        console.log('📅 Procesando fecha:', fechaLimpia, 'Tipo:', typeof fechaLimpia);
+
+        // Crear fecha desde string ISO
+        const fecha = new Date(fechaLimpia);
+
+        // Verificar si la fecha es válida
+        const timestamp = fecha.getTime();
+        console.log('📅 Timestamp:', timestamp, 'isNaN:', isNaN(timestamp));
+
+        if (isNaN(timestamp)) {
+            console.warn('❌ Fecha inválida (getTime es NaN):', fechaLimpia);
+
+            // Intento alternativo: parsear manualmente
+            // Formato esperado: YYYY-MM-DDTHH:mm:ss.sssZ
+            const match = fechaLimpia.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+            if (match) {
+                const [, año, mes, dia] = match;
+                console.log('✅ Fecha parseada manualmente:', `${dia}/${mes}/${año}`);
+                return `${dia}/${mes}/${año}`;
+            }
+
             return '-';
         }
 
         // Verificar año razonable (entre 2000 y 2100)
         const año = fecha.getFullYear();
         if (año < 2000 || año > 2100) {
-            console.warn('Fecha fuera de rango:', fechaISO, 'Año:', año);
+            console.warn('❌ Fecha fuera de rango:', fechaLimpia, 'Año:', año);
             return '-';
         }
 
@@ -2184,7 +2202,7 @@ function formatearFecha(fechaISO) {
         };
 
         const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
-        console.log('✅ Fecha formateada:', fechaISO, '→', fechaFormateada);
+        console.log('✅ Fecha formateada:', fechaLimpia, '→', fechaFormateada);
         return fechaFormateada;
     } catch (error) {
         console.error('❌ Error formateando fecha:', error, 'Input:', fechaISO, 'Tipo:', typeof fechaISO);
