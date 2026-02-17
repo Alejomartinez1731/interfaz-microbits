@@ -253,7 +253,11 @@ const CONFIG = {
         temas: '/dashboard-temas',
         contador: '/dashboard-contador',
         cursos: '/dashboard-cursos',
-        toggleEstudiante: '/toggle-estudiante'
+        toggleEstudiante: '/toggle-estudiante',
+        // 📅 Gestión de eventos del calendario
+        eventosGuardar: '/calendar-guardar-evento',
+        eventosListar: '/calendar-listar-eventos',
+        eventosEliminar: '/calendar-eliminar-evento'
     },
     itemsPerPage: 10
 };
@@ -701,15 +705,104 @@ function formatearFechaMostrar(fechaISO) {
 // ============================================
 // GESTIÓN DE EVENTOS
 // ============================================
-function cargarEventosCalendario() {
-    const guardados = localStorage.getItem('microbits-calendario-eventos');
-    if (guardados) {
-        state.calendario.eventos = JSON.parse(guardados);
+
+async function cargarEventosCalendario() {
+    console.log('📅 Cargando eventos desde N8N...');
+
+    try {
+        // Intentar cargar desde N8N
+        const eventos = await fetchData(CONFIG.endpoints.eventosListar);
+
+        if (eventos && Array.isArray(eventos)) {
+            state.calendario.eventos = eventos;
+            console.log(`✅ ${eventos.length} eventos cargados desde N8N`);
+        } else {
+            // Si no hay eventos en N8N, intentar cargar de localStorage como fallback
+            const guardados = localStorage.getItem('microbits-calendario-eventos');
+            if (guardados) {
+                state.calendario.eventos = JSON.parse(guardados);
+                console.log('⚠️ Cargados desde localStorage (fallback)');
+                // Migrar eventos a N8N
+                migrarEventosAN8N();
+            } else {
+                state.calendario.eventos = [];
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error cargando eventos:', error);
+        // Fallback a localStorage
+        const guardados = localStorage.getItem('microbits-calendario-eventos');
+        if (guardados) {
+            state.calendario.eventos = JSON.parse(guardados);
+            console.log('⚠️ Cargados desde localStorage (fallback tras error)');
+        } else {
+            state.calendario.eventos = [];
+        }
     }
 }
 
-function guardarEventosCalendario() {
-    localStorage.setItem('microbits-calendario-eventos', JSON.stringify(state.calendario.eventos));
+async function guardarEventosCalendario() {
+    // Ya no guardamos en localStorage, se guarda automáticamente en N8N
+    // Esta función se mantiene por compatibilidad pero no hace nada
+    console.log('ℹ️ Los eventos se guardan automáticamente en N8N al crear/editar');
+}
+
+async function migrarEventosAN8N() {
+    // Migrar eventos de localStorage a N8N
+    const eventosLocales = state.calendario.eventos;
+    if (eventosLocales.length === 0) return;
+
+    console.log(`🔄 Migrando ${eventosLocales.length} eventos a N8N...`);
+
+    for (const evento of eventosLocales) {
+        try {
+            await guardarEventoEnN8N(evento);
+        } catch (error) {
+            console.error('Error migrando evento:', error);
+        }
+    }
+
+    console.log('✅ Migración completada');
+    // Limpiar localStorage después de migrar
+    localStorage.removeItem('microbits-calendario-eventos');
+}
+
+async function guardarEventoEnN8N(evento) {
+    const url = CONFIG.baseUrl + encodeURIComponent(CONFIG.endpoints.eventosGuardar);
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(evento)
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+}
+
+async function eliminarEventoDeN8N(eventoId) {
+    const url = CONFIG.baseUrl + encodeURIComponent(CONFIG.endpoints.eventosEliminar);
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: eventoId })
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
 }
 
 function abrirModalEvento(evento = null) {
@@ -745,7 +838,7 @@ function cerrarModalEvento() {
     modal.classList.add('hidden');
 }
 
-function guardarEvento() {
+async function guardarEvento() {
     const form = document.getElementById('event-form');
     const editId = form.dataset.editId;
 
@@ -755,26 +848,53 @@ function guardarEvento() {
         fecha: document.getElementById('event-date').value,
         tipo: document.getElementById('event-type').value,
         descripcion: document.getElementById('event-description').value,
-        curso: document.getElementById('event-course').value || null
+        curso: document.getElementById('event-course').value || null,
+        // Agregar metadata
+        creado_por: 'docente', // Se puede cambiar por el nombre del docente autenticado
+        fecha_creacion: new Date().toISOString()
     };
 
-    if (editId) {
-        // Actualizar evento existente
-        const index = state.calendario.eventos.findIndex(e => e.id === editId);
-        if (index !== -1) {
-            state.calendario.eventos[index] = evento;
-        }
-        mostrarToast('Evento actualizado correctamente', 'success');
-    } else {
-        // Crear nuevo evento
-        state.calendario.eventos.push(evento);
-        mostrarToast('Evento creado correctamente', 'success');
-    }
+    // Mostrar loading
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    submitBtn.disabled = true;
 
-    guardarEventosCalendario();
-    cerrarModalEvento();
-    renderizarCalendario();
-    renderizarEventosDia();
+    try {
+        if (editId) {
+            // Actualizar evento existente (en N8N)
+            await guardarEventoEnN8N(evento);
+
+            // Actualizar estado local
+            const index = state.calendario.eventos.findIndex(e => e.id === editId);
+            if (index !== -1) {
+                state.calendario.eventos[index] = evento;
+            }
+            mostrarToast('Evento actualizado correctamente', 'success');
+        } else {
+            // Crear nuevo evento (en N8N)
+            const resultado = await guardarEventoEnN8N(evento);
+
+            // Actualizar estado local con el ID que devuelve N8N
+            if (resultado && resultado.id) {
+                evento.id = resultado.id;
+            }
+            state.calendario.eventos.push(evento);
+            mostrarToast('Evento creado correctamente', 'success');
+        }
+
+        cerrarModalEvento();
+        renderizarCalendario();
+        renderizarEventosDia();
+
+    } catch (error) {
+        console.error('❌ Error guardando evento:', error);
+        mostrarToast('Error al guardar el evento: ' + error.message, 'error');
+    } finally {
+        // Restaurar botón
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 function editarEvento(id) {
@@ -784,13 +904,30 @@ function editarEvento(id) {
     }
 }
 
-function eliminarEvento(id) {
-    if (confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+async function eliminarEvento(id) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+        return;
+    }
+
+    // Mostrar loading
+    mostrarLoading(true);
+
+    try {
+        // Eliminar de N8N
+        await eliminarEventoDeN8N(id);
+
+        // Actualizar estado local
         state.calendario.eventos = state.calendario.eventos.filter(e => e.id !== id);
-        guardarEventosCalendario();
+
         renderizarCalendario();
         renderizarEventosDia();
         mostrarToast('Evento eliminado correctamente', 'success');
+
+    } catch (error) {
+        console.error('❌ Error eliminando evento:', error);
+        mostrarToast('Error al eliminar el evento: ' + error.message, 'error');
+    } finally {
+        mostrarLoading(false);
     }
 }
 
