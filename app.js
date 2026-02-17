@@ -1680,23 +1680,47 @@ async function fetchData(endpoint, params = {}) {
     }
 
     console.log('🔍 Fetching via proxy:', url);
+    console.log('🔍 CONFIG baseUrl:', CONFIG.baseUrl);
+    console.log('🔍 Endpoint:', endpoint);
+    console.log('🔍 Params:', params);
 
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
+    // Crear AbortController para timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos de timeout
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+
+        if (!response.ok) {
+            console.error('❌ Error response:', response.status, response.statusText);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    });
 
-    console.log('📡 Response status:', response.status);
+        const data = await response.json();
+        console.log('✅ Data received:', data);
+        console.log('✅ Data type:', typeof data, 'Array:', Array.isArray(data), 'Length:', data?.length);
+        return data;
+    } catch (error) {
+        console.error('❌ Fetch error:', error);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
 
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (error.name === 'AbortError') {
+            throw new Error('Timeout: La petición tardó más de 15 segundos');
+        }
+        throw error;
     }
-
-    const data = await response.json();
-    console.log('✅ Data received:', data);
-    return data;
 }
 
 function cargarDatosEjemplo() {
