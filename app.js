@@ -240,9 +240,13 @@ function capitalizeFirst(str) {
 // CONFIGURACIÓN DE WEBHOOKS N8N (CON PROXY LOCAL)
 // ============================================
 const CONFIG = {
-    // Conexión directa a N8N
-    baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
-    // baseUrl: window.location.origin + '/api/n8n', // Proxy local (alternativa)
+    // 🔄 Usar Proxy API de Vercel (recomendado)
+    // El proxy usa variables de entorno configuradas en Vercel
+    baseUrl: '/api/n8n-proxy?path=',
+
+    // ❌ URL directa (NO usar en producción - solo para desarrollo local sin proxy)
+    // baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
+
     endpoints: {
         estudiantes: '/dashboard-estudiantes',
         preguntas: '/dashboard-preguntas',
@@ -398,27 +402,49 @@ function inicializarCalendario() {
 function generarFestivosCatalunya() {
     const año = new Date().getFullYear();
 
-    // Festivos nacionales fijos
+    // ============================================
+    // FESTIVOS NACIONALES (España)
+    // ============================================
     const festivos = [
-        { fecha: `${año}-01-01`, nombre: 'Año Nuevo' },
-        { fecha: `${año}-01-06`, nombre: 'Epifanía del Señor' },
-        { fecha: `${año}-05-01`, nombre: 'Fiesta del Trabajo' },
-        { fecha: `${año}-08-15`, nombre: 'Asunción de la Virgen' },
-        { fecha: `${año}-11-01`, nombre: 'Todos los Santos' },
-        { fecha: `${año}-12-06`, nombre: 'Día de la Constitución' },
-        { fecha: `${año}-12-08`, nombre: 'Inmaculada Concepción' },
-        { fecha: `${año}-12-25`, nombre: 'Natividad del Señor' },
-        { fecha: `${año}-12-26`, nombre: 'Sant Esteve' }
+        { fecha: `${año}-01-01`, nombre: 'Año Nuevo', tipo: 'nacional' },
+        { fecha: `${año}-01-06`, nombre: 'Epifanía del Señor', tipo: 'nacional' },
+        { fecha: `${año}-05-01`, nombre: 'Fiesta del Trabajo', tipo: 'nacional' },
+        { fecha: `${año}-08-15`, nombre: 'Asunción de la Virgen', tipo: 'nacional' },
+        { fecha: `${año}-11-01`, nombre: 'Todos los Santos', tipo: 'nacional' },
+        { fecha: `${año}-12-06`, nombre: 'Día de la Constitución', tipo: 'nacional' },
+        { fecha: `${año}-12-08`, nombre: 'Inmaculada Concepción', tipo: 'nacional' },
+        { fecha: `${año}-12-25`, nombre: 'Natividad del Señor', tipo: 'nacional' },
+        { fecha: `${año}-12-26`, nombre: 'Sant Esteve', tipo: 'nacional' }
     ];
 
-    // Festivos de Cataluña
+    // ============================================
+    // FESTIVOS DE CATALUÑA
+    // ============================================
     festivos.push(
-        { fecha: `${año}-02-12`, nombre: 'Santa Eulàlia' },
-        { fecha: `${año}-06-24`, nombre: 'Sant Joan' },
-        { fecha: `${año}-09-11`, nombre: 'Diada de Catalunya' }
+        { fecha: `${año}-02-12`, nombre: 'Santa Eulàlia', tipo: 'catalunya' },
+        { fecha: `${año}-06-24`, nombre: 'Sant Joan', tipo: 'catalunya' },
+        { fecha: `${año}-09-11`, nombre: 'Diada de Catalunya', tipo: 'catalunya' }
     );
 
-    // Semana Santa (cálculo aproximado)
+    // ============================================
+    // FESTIVOS LOCALES DE REUS
+    // ============================================
+    festivos.push(
+        // Sant Pere - Patrón de Reus (29 de junio)
+        { fecha: `${año}-06-29`, nombre: 'Sant Pere (Patrón de Reus)', tipo: 'reus' },
+
+        // Fiesta Mayor de Reus (generalmente última semana de junio)
+        // En 2026 sería aproximadamente del 21 al 27 de junio
+        { fecha: `${año}-06-25`, nombre: 'Fiesta Mayor de Reus', tipo: 'reus' },
+
+        // Festivos locales adicionales según el calendario oficial de Reus
+        // Estos pueden variar según el año, verifica el calendario oficial
+        { fecha: `${año}-07-25`, nombre: 'Santiago Apóstol (Reus)', tipo: 'reus' }
+    );
+
+    // ============================================
+    // SEMANA SANTA (cálculo dinámico)
+    // ============================================
     // Pascua = Primer domingo después de la luna llena siguiente al equinoccio de primavera
     const pascua = calcularPascua(año);
 
@@ -435,12 +461,27 @@ function generarFestivosCatalunya() {
     lunesPascua.setDate(lunesPascua.getDate() + 1);
 
     festivos.push(
-        { fecha: formatearFechaISO(juevesSanto), nombre: 'Jueves Santo' },
-        { fecha: formatearFechaISO(viernesSanto), nombre: 'Viernes Santo' },
-        { fecha: formatearFechaISO(lunesPascua), nombre: 'Lunes de Pascua' }
+        { fecha: formatearFechaISO(juevesSanto), nombre: 'Jueves Santo', tipo: 'nacional' },
+        { fecha: formatearFechaISO(viernesSanto), nombre: 'Viernes Santo', tipo: 'nacional' },
+        { fecha: formatearFechaISO(lunesPascua), nombre: 'Lunes de Pascua', tipo: 'catalunya' }
     );
 
+    // ============================================
+    // FESTIVOS MÓVILES ADICIONALES DE REUS
+    // ============================================
+    // Corpus Christi (60 días después de Pascua)
+    const corpusChristi = new Date(pascua);
+    corpusChristi.setDate(corpusChristi.getDate() + 60);
+
+    festivos.push(
+        { fecha: formatearFechaISO(corpusChristi), nombre: 'Corpus Christi (Reus)', tipo: 'reus' }
+    );
+
+    // Guardar en el estado
     state.calendario.festivosCatalunya = festivos;
+
+    console.log('📅 Festivos generados:', festivos.length, 'días festivos');
+    console.log('📅 Festivos de Reus:', festivos.filter(f => f.tipo === 'reus').length, 'días');
 }
 
 function calcularPascua(año) {
@@ -572,14 +613,40 @@ function renderizarEventosDia() {
 
     // Renderizar festivo si existe
     if (festivo) {
+        // Determinar el tipo de festivo para mostrar icono y descripción apropiados
+        const tipoFestivo = festivo.tipo || 'catalunya';
+
+        let iconoFestivo = 'fa-crown';
+        let descripcionFestivo = 'Festivo en Cataluña';
+        let claseEspecial = 'holiday';
+
+        switch(tipoFestivo) {
+            case 'nacional':
+                iconoFestivo = 'fa-flag';
+                descripcionFestivo = 'Festivo Nacional';
+                claseEspecial = 'national';
+                break;
+            case 'reus':
+                iconoFestivo = 'fa-landmark';
+                descripcionFestivo = '🏛️ Festivo Local - Reus';
+                claseEspecial = 'reus';
+                break;
+            case 'catalunya':
+            default:
+                iconoFestivo = 'fa-crown';
+                descripcionFestivo = 'Festivo en Cataluña';
+                claseEspecial = 'holiday';
+                break;
+        }
+
         html += `
-            <div class="event-item">
-                <div class="event-item-icon holiday">
-                    <i class="fas fa-crown"></i>
+            <div class="event-item ${claseEspecial}-event">
+                <div class="event-item-icon ${claseEspecial}">
+                    <i class="fas ${iconoFestivo}"></i>
                 </div>
                 <div class="event-item-content">
                     <div class="event-item-title">${festivo.nombre}</div>
-                    <div class="event-item-description">Festivo en Cataluña</div>
+                    <div class="event-item-description">${descripcionFestivo}</div>
                 </div>
             </div>
         `;
@@ -1461,14 +1528,22 @@ async function cargarTodosDatos() {
 }
 
 async function fetchData(endpoint, params = {}) {
-    const url = new URL(CONFIG.baseUrl + endpoint);
+    // Construir URL con query params para el proxy
+    let url = CONFIG.baseUrl + encodeURIComponent(endpoint);
+
+    // Agregar parámetros adicionales
+    const queryParams = new URLSearchParams();
     Object.keys(params).forEach(key => {
-        if (params[key]) url.searchParams.append(key, params[key]);
+        if (params[key]) queryParams.append(key, params[key]);
     });
 
-    console.log('🔍 Fetching:', url.toString());
+    if (queryParams.toString()) {
+        url += '&' + queryParams.toString();
+    }
 
-    const response = await fetch(url.toString(), {
+    console.log('🔍 Fetching via proxy:', url);
+
+    const response = await fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
@@ -1837,16 +1912,22 @@ async function toggleEstudiante(chatId, estadoActual) {
     toggleEl.classList.add('loading');
 
     try {
-        await fetch(CONFIG.baseUrl + CONFIG.endpoints.toggleEstudiante, {
+        // Construir URL para el proxy con POST
+        const url = CONFIG.baseUrl + encodeURIComponent(CONFIG.endpoints.toggleEstudiante);
+        const body = {
+            chat_id: chatId,
+            habilitado: !estadoActual,
+            curso: state.cursoActual
+        };
+
+        console.log('🔄 Toggle estudiante via proxy:', url, body);
+
+        await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                chat_id: chatId,
-                habilitado: !estadoActual,
-                curso: state.cursoActual
-            })
+            body: JSON.stringify(body)
         });
 
         // Actualizar estado local

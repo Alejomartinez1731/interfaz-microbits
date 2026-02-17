@@ -547,6 +547,30 @@ body::before {
     background: rgba(255, 107, 107, 0.25);
 }
 
+/* Festivos Nacionales - Dorado */
+.calendar-day.national {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.calendar-day.national:hover {
+    background: rgba(255, 215, 0, 0.25);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+/* Festivos de Reus - Morado/Granate */
+.calendar-day.reus {
+    background: rgba(156, 89, 182, 0.2);
+    border-color: rgba(156, 89, 182, 0.6);
+    box-shadow: 0 0 12px rgba(156, 89, 182, 0.3);
+}
+
+.calendar-day.reus:hover {
+    background: rgba(156, 89, 182, 0.35);
+    box-shadow: 0 0 18px rgba(156, 89, 182, 0.5);
+}
+
 /* Events Panel */
 .calendar-events-panel {
     background: rgba(10, 20, 35, 0.6);
@@ -670,6 +694,20 @@ body::before {
 .event-item-icon.holiday {
     background: rgba(0, 255, 136, 0.2);
     color: var(--success-green);
+}
+
+/* Festivos Nacionales - Dorado */
+.event-item-icon.national {
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+/* Festivos de Reus - Morado/Violeta */
+.event-item-icon.reus {
+    background: rgba(156, 89, 182, 0.25);
+    color: #9b59b6;
+    box-shadow: 0 0 15px rgba(156, 89, 182, 0.5);
 }
 
 .event-item-icon.other {
