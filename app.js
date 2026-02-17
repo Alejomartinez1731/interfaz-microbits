@@ -242,9 +242,10 @@ function capitalizeFirst(str) {
 const CONFIG = {
     // 🔄 Usar Proxy API de Vercel (recomendado)
     // El proxy usa variables de entorno configuradas en Vercel
-    baseUrl: '/api/n8n-proxy?path=',
+    baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
 
-    // ❌ URL directa (NO usar en producción - solo para desarrollo local sin proxy)
+    // 🔄 Proxy API de Vercel (desactivado temporalmente - requiere configuración)
+    // baseUrl: '/api/n8n-proxy?path=',
     // baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
 
     endpoints: {
@@ -1666,8 +1667,8 @@ async function cargarTodosDatos() {
 }
 
 async function fetchData(endpoint, params = {}) {
-    // Construir URL con query params para el proxy
-    let url = CONFIG.baseUrl + encodeURIComponent(endpoint);
+    // Construir URL con query params (conexión directa a N8N)
+    let url = CONFIG.baseUrl + endpoint;
 
     // Agregar parámetros adicionales
     const queryParams = new URLSearchParams();
@@ -1676,17 +1677,16 @@ async function fetchData(endpoint, params = {}) {
     });
 
     if (queryParams.toString()) {
-        url += '&' + queryParams.toString();
+        url += '?' + queryParams.toString();
     }
 
-    console.log('🔍 Fetching via proxy:', url);
-    console.log('🔍 CONFIG baseUrl:', CONFIG.baseUrl);
+    console.log('🔍 Fetching N8N:', url);
     console.log('🔍 Endpoint:', endpoint);
     console.log('🔍 Params:', params);
 
     // Crear AbortController para timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos de timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
 
     try {
         const response = await fetch(url, {
@@ -1700,7 +1700,6 @@ async function fetchData(endpoint, params = {}) {
         clearTimeout(timeoutId);
 
         console.log('📡 Response status:', response.status);
-        console.log('📡 Response ok:', response.ok);
 
         if (!response.ok) {
             console.error('❌ Error response:', response.status, response.statusText);
@@ -1709,12 +1708,9 @@ async function fetchData(endpoint, params = {}) {
 
         const data = await response.json();
         console.log('✅ Data received:', data);
-        console.log('✅ Data type:', typeof data, 'Array:', Array.isArray(data), 'Length:', data?.length);
         return data;
     } catch (error) {
         console.error('❌ Fetch error:', error);
-        console.error('❌ Error name:', error.name);
-        console.error('❌ Error message:', error.message);
 
         if (error.name === 'AbortError') {
             throw new Error('Timeout: La petición tardó más de 15 segundos');
@@ -2099,15 +2095,15 @@ async function toggleEstudiante(chatId, estadoActual) {
     toggleEl.classList.add('loading');
 
     try {
-        // Construir URL para el proxy con POST
-        const url = CONFIG.baseUrl + encodeURIComponent(CONFIG.endpoints.toggleEstudiante);
+        // Construir URL para N8N (conexión directa)
+        const url = CONFIG.baseUrl + CONFIG.endpoints.toggleEstudiante;
         const body = {
             chat_id: chatId,
             habilitado: !estadoActual,
             curso: state.cursoActual
         };
 
-        console.log('🔄 Toggle estudiante via proxy:', url, body);
+        console.log('🔄 Toggle estudiante:', url, body);
 
         await fetch(url, {
             method: 'POST',
