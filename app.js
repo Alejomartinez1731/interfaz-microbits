@@ -437,9 +437,8 @@ function generarFestivosCatalunya() {
         // Sant Pere - Patrón de Reus (29 de junio)
         { fecha: `${año}-06-29`, nombre: 'Sant Pere (Patrón de Reus)', tipo: 'reus' },
 
-        // Fiesta Mayor de Reus (generalmente última semana de junio)
-        // En 2026 sería aproximadamente del 21 al 27 de junio
-        { fecha: `${año}-06-25`, nombre: 'Fiesta Mayor de Reus', tipo: 'reus' },
+        // Fiesta Mayor de Reus (24 de junio)
+        { fecha: `${año}-06-24`, nombre: 'Fiesta Mayor de Reus', tipo: 'reus' },
 
         // Santiago Apóstol (25 de julio)
         { fecha: `${año}-07-25`, nombre: 'Santiago Apóstol (Reus)', tipo: 'reus' },

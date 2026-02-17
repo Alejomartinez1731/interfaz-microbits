@@ -10,10 +10,10 @@ Se han agregado los festivos locales de **Reus (Tarragona)** al calendario del d
 - **Icono**: 🏛️ (Landmark)
 - **Color**: Morado/Violeta
 
-### Fiesta Mayor de Reus (~25 de junio)
-- **Fecha**: Aproximadamente el 25 de junio (última semana de junio)
+### Fiesta Mayor de Reus (24 de junio)
+- **Fecha**: 24 de junio
 - **Descripción**: Fiesta Mayor de Reus
-- **Nota**: La fecha exacta puede variar según el calendario oficial del ayuntamiento
+- **Nota**: Coincide con la víspera de Sant Joan
 - **Icono**: 🏛️ (Landmark)
 - **Color**: Morado/Violeta
 
