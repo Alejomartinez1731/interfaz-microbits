@@ -2125,12 +2125,11 @@ function formatearFecha(fechaISO) {
             return '-';
         }
 
+        // Formatear solo día, mes y año (sin hora)
         const opciones = {
             day: '2-digit',
             month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric'
         };
 
         return fecha.toLocaleDateString('es-ES', opciones);
