@@ -1977,13 +1977,6 @@ function renderizarPreguntas() {
         `;
     }).join('');
 }
-                <td>${preg.Chat_id}</td>
-                <td class="pregunta-text" title="${textoPregunta}">${textoPregunta}</td>
-                <td class="fecha-tabla">${formatearFecha(fecha)}</td>
-            </tr>
-        `;
-    }).join('');
-}
 
 function renderizarActivos() {
     const tbody = document.getElementById('tbody-activos');
