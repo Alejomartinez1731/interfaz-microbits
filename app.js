@@ -441,9 +441,11 @@ function generarFestivosCatalunya() {
         // En 2026 sería aproximadamente del 21 al 27 de junio
         { fecha: `${año}-06-25`, nombre: 'Fiesta Mayor de Reus', tipo: 'reus' },
 
-        // Festivos locales adicionales según el calendario oficial de Reus
-        // Estos pueden variar según el año, verifica el calendario oficial
-        { fecha: `${año}-07-25`, nombre: 'Santiago Apóstol (Reus)', tipo: 'reus' }
+        // Santiago Apóstol (25 de julio)
+        { fecha: `${año}-07-25`, nombre: 'Santiago Apóstol (Reus)', tipo: 'reus' },
+
+        // Mare de Déu de la Misericòrdia (25 de septiembre) - Festivo importante de Reus
+        { fecha: `${año}-09-25`, nombre: 'Mare de Déu de la Misericòrdia', tipo: 'reus' }
     );
 
     // ============================================

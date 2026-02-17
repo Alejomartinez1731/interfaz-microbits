@@ -23,6 +23,13 @@ Se han agregado los festivos locales de **Reus (Tarragona)** al calendario del d
 - **Icono**: 🏛️ (Landmark)
 - **Color**: Morado/Violeta
 
+### Mare de Déu de la Misericòrdia (25 de septiembre) ⭐
+- **Fecha**: 25 de septiembre
+- **Descripción**: Virgen de la Misericordia - Festivo muy importante de Reus
+- **Nota**: Festivo local significativo, procesión y celebraciones
+- **Icono**: 🏛️ (Landmark)
+- **Color**: Morado/Violeta
+
 ### Corpus Christi (Fecha móvil)
 - **Fecha**: 60 días después de Pascua
 - **Descripción**: Corpus Christi (Reus)
