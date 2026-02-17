@@ -1906,10 +1906,16 @@ function renderizarPreguntas() {
         return nombre.includes(state.busqueda) || pregunta.includes(state.busqueda);
     });
 
+    // 🔍 DEBUG: Mostrar la primera pregunta para ver los campos
+    if (datos.length > 0) {
+        console.log('🔍 Campos de la primera pregunta:', datos[0]);
+        console.log('🔍 Todos los campos disponibles:', Object.keys(datos[0]));
+    }
+
     // Ordenar por fecha más reciente
     datos.sort((a, b) => {
-        const fechaA = new Date(a['Fecha de Pregunta'] || a.fecha || a.Fecha || 0);
-        const fechaB = new Date(b['Fecha de Pregunta'] || b.fecha || b.Fecha || 0);
+        const fechaA = new Date(a['Fecha de Pregunta'] || a.fecha || a.Fecha || a.created_at || a.timestamp || 0);
+        const fechaB = new Date(b['Fecha de Pregunta'] || b.fecha || b.Fecha || b.created_at || b.timestamp || 0);
         return fechaB - fechaA;
     });
 
@@ -1925,13 +1931,32 @@ function renderizarPreguntas() {
     actualizarPaginacion(total);
 
     tbody.innerHTML = paginados.map(preg => {
-        // Buscar la fecha en diferentes campos posibles
-        const fecha = preg['Fecha de Pregunta'] || preg.fecha || preg.Fecha || '';
+        // Buscar la fecha en diferentes campos posibles (más opciones)
+        const fecha = preg['Fecha de Pregunta'] ||
+                      preg.fecha ||
+                      preg.Fecha ||
+                      preg.created_at ||
+                      preg.timestamp ||
+                      preg.date ||
+                      '';
+
+        // Si no hay fecha, mostrar debug
+        if (!fecha && preg) {
+            console.log('⚠️ Sin fecha para pregunta:', preg);
+        }
+
         const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
 
         return `
             <tr class="fade-in">
                 <td><strong>${preg.Nombre}</strong></td>
+                <td>${preg.Chat_id}</td>
+                <td class="pregunta-text" title="${textoPregunta}">${textoPregunta}</td>
+                <td class="fecha-tabla">${formatearFecha(fecha)}</td>
+            </tr>
+        `;
+    }).join('');
+}
                 <td>${preg.Chat_id}</td>
                 <td class="pregunta-text" title="${textoPregunta}">${textoPregunta}</td>
                 <td class="fecha-tabla">${formatearFecha(fecha)}</td>
