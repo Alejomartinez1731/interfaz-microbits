@@ -1960,9 +1960,14 @@ function renderizarPreguntas() {
                       preg.date ||
                       '';
 
-        // Si no hay fecha, mostrar debug
-        if (!fecha && preg) {
-            console.log('⚠️ Sin fecha para pregunta:', preg);
+        // Si no hay fecha, mostrar debug completo
+        if (!fecha) {
+            console.log('⚠️ Pregunta sin fecha:', preg);
+            console.log('⚠️ Campos disponibles:', Object.keys(preg));
+            console.log('⚠️ Valores de todos los campos:', Object.entries(preg).reduce((obj, [key, val]) => {
+                obj[key] = val;
+                return obj;
+            }, {}));
         }
 
         const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
@@ -2152,14 +2157,22 @@ function actualizarPaginacion(totalPaginas) {
 }
 
 function formatearFecha(fechaISO) {
-    if (!fechaISO) return '-';
+    if (!fechaISO || fechaISO === '') return '-';
 
     try {
+        // Crear fecha desde string ISO
         const fecha = new Date(fechaISO);
 
-        // Verificar si la fecha es válida
+        // Verificar si la fecha es válida (getTime() devuelve NaN si es inválida)
         if (isNaN(fecha.getTime())) {
-            console.warn('Fecha inválida:', fechaISO);
+            console.warn('Fecha inválida (getTime es NaN):', fechaISO, 'Tipo:', typeof fechaISO);
+            return '-';
+        }
+
+        // Verificar año razonable (entre 2000 y 2100)
+        const año = fecha.getFullYear();
+        if (año < 2000 || año > 2100) {
+            console.warn('Fecha fuera de rango:', fechaISO, 'Año:', año);
             return '-';
         }
 
@@ -2170,9 +2183,11 @@ function formatearFecha(fechaISO) {
             year: 'numeric'
         };
 
-        return fecha.toLocaleDateString('es-ES', opciones);
+        const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
+        console.log('✅ Fecha formateada:', fechaISO, '→', fechaFormateada);
+        return fechaFormateada;
     } catch (error) {
-        console.error('Error formateando fecha:', error, 'Input:', fechaISO);
+        console.error('❌ Error formateando fecha:', error, 'Input:', fechaISO, 'Tipo:', typeof fechaISO);
         return '-';
     }
 }
