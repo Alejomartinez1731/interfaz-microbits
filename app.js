@@ -1934,9 +1934,33 @@ function renderizarPreguntas() {
 
     // Ordenar por fecha más reciente
     datos.sort((a, b) => {
-        const fechaA = new Date(a['Fecha de Pregunta'] || a.fecha || a.Fecha || a.created_at || a.timestamp || 0);
-        const fechaB = new Date(b['Fecha de Pregunta'] || b.fecha || b.Fecha || b.created_at || b.timestamp || 0);
-        return fechaB - fechaA;
+        // Función para extraer timestamp de fecha ISO
+        const getTimestamp = (obj) => {
+            const camposFecha = [
+                obj['Fecha de Pregunta'],
+                obj.fecha,
+                obj.Fecha,
+                obj.created_at,
+                obj.timestamp
+            ].filter(f => f); // Filtrar campos que existen
+
+            if (camposFecha.length === 0) return 0;
+
+            const fechaStr = camposFecha[0].toString();
+            // Extraer timestamp manualmente de formato ISO
+            const match = fechaStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+            if (match) {
+                const [, año, mes, dia, hora, min, sec] = match;
+                // Crear fecha manualmente
+                return new Date(año, mes - 1, dia, hora, min, sec).getTime();
+            }
+            return 0;
+        };
+
+        const timestampA = getTimestamp(a);
+        const timestampB = getTimestamp(b);
+
+        return timestampB - timestampA; // Orden descendente (más reciente primero)
     });
 
     if (datos.length === 0) {
