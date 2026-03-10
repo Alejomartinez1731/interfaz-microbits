@@ -1,0 +1,51 @@
+# Dependencias
+node_modules/
+package-lock.json
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Archivos temporales de Windows
+Desktop/
+Documents/
+Downloads/
+Favorites/
+Links/
+Music/
+Pictures/
+Videos/
+AppData/
+Application Data/
+Local Settings/
+Templates/
+Contacts/
+Cookies/
+NTUSER*
+ntuser.dat*
+*.log
+
+# Archivos del sistema
+.android/
+.cagent/
+.chelper/
+.config/
+.copilot/
+.docker/
+.ms-ad/
+.streamlit/
+.vscode/
+IntelGraphicsProfiles/
+OneDrive/
+Projects/
+
+# Claude
+.claude/
+.claude.json*
+
+# Otros
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
