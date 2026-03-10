@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Dashboard Microbits Institut",
   "scripts": {
-    "start": "npx http-server -p 3000 -o",
-    "dev": "npx http-server -p 3000 -o"
+    "start": "node proxy-server.js",
+    "dev": "node proxy-server.js"
   }
 }
