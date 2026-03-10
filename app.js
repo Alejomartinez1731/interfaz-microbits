@@ -237,14 +237,17 @@ function capitalizeFirst(str) {
 }
 
 // ============================================
-// CONFIGURACIÓN DE WEBHOOKS N8N (CON PROXY LOCAL)
+// CONFIGURACIÓN DE WEBHOOKS N8N
 // ============================================
-const CONFIG = {
-    // 🔧 Proxy local para evitar CORS en localhost
-    baseUrl: '/webhook',  // Proxy local (http://localhost:3000/webhook -> n8n)
 
-    // URL directa para producción (Vercel)
-    // baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
+// Detectar si estamos en localhost o producción
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const CONFIG = {
+    // 🔧 Proxy local para localhost, URL directa para Vercel
+    baseUrl: isLocalhost
+        ? '/webhook'  // Proxy local (http://localhost:3000/webhook -> n8n)
+        : 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',  // Producción Vercel
 
     endpoints: {
         estudiantes: '/dashboard-estudiantes',
