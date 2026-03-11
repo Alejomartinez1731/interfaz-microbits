@@ -1,5 +1,5 @@
-// Serverless Function para Vercel - Proxy a n8n
-// Evita problemas de CORS entre Vercel y n8n
+// Serverless Function para Vercel - Proxy a N8N
+// Reescribe /webhook/* a /api/webhook/* y extrae el endpoint del path
 
 export default async function handler(req, res) {
     // URL base de n8n
@@ -17,29 +17,41 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Obtener la ruta después de /api/webhook o /webhook
-        // Vercel reescribe /webhook/* a /api/webhook, así que usamos query o la ruta completa
-        let path = req.url;
+        // Obtener la ruta completa de la URL
+        let fullPath = req.url;
 
-        // Remover prefijos que pueda agregar Vercel
-        if (path.startsWith('/api/webhook')) {
-            path = path.replace('/api/webhook', '');
-        } else if (path.startsWith('/webhook')) {
-            path = path.replace('/webhook', '');
+        console.log('📡 [Vercel Proxy] Original URL:', fullPath);
+
+        // Remover prefijo /api/webhook o /webhook
+        let endpoint = fullPath;
+        if (endpoint.startsWith('/api/webhook')) {
+            endpoint = endpoint.replace('/api/webhook', '');
+        } else if (endpoint.startsWith('/webhook')) {
+            endpoint = endpoint.replace('/webhook', '');
         }
 
-        // Eliminar query params si existen
-        const urlParts = path.split('?');
-        path = urlParts[0];
+        // Asegurar que el endpoint comienza con /
+        if (!endpoint.startsWith('/')) {
+            endpoint = '/' + endpoint;
+        }
+
+        // Separar el endpoint de los query params
+        const [pathOnly, queryString] = endpoint.split('?');
 
         // Construir URL completa para n8n
-        const url = N8N_WEBHOOK_URL + path;
+        let fullUrl = N8N_WEBHOOK_URL + pathOnly;
 
         // Agregar query params si existen
-        const queryParams = urlParts[1];
-        const fullUrl = queryParams ? `${url}?${queryParams}` : url;
+        if (queryString) {
+            fullUrl += '?' + queryString;
+        }
 
-        console.log('📡 [Vercel Proxy]', req.method, fullUrl);
+        console.log('📡 [Vercel Proxy] Request:', {
+            method: req.method,
+            path: pathOnly,
+            query: queryString,
+            finalUrl: fullUrl
+        });
 
         // Configurar opciones de fetch
         const options = {
@@ -59,14 +71,20 @@ export default async function handler(req, res) {
 
         // Obtener respuesta como texto primero para debug
         const text = await response.text();
-        console.log('📡 [Vercel Proxy] Response status:', response.status);
+        console.log('📡 [Vercel Proxy] Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            contentType: response.headers.get('content-type')
+        });
 
         // Intentar parsear como JSON
         let data;
         try {
             data = JSON.parse(text);
+            console.log('✅ [Vercel Proxy] JSON parsed successfully');
         } catch (e) {
             // Si no es JSON, devolver el texto tal cual
+            console.log('⚠️ [Vercel Proxy] Not JSON, returning text:', text.substring(0, 100));
             data = text || { success: true };
         }
 
@@ -74,10 +92,11 @@ export default async function handler(req, res) {
         res.status(response.status).json(data);
 
     } catch (error) {
-        console.error('❌ Error en proxy a n8n:', error);
+        console.error('❌ [Vercel Proxy] Error:', error);
         res.status(500).json({
             error: 'Error en proxy a n8n',
-            message: error.message
+            message: error.message,
+            stack: error.stack
         });
     }
 }
