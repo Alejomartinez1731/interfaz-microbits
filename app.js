@@ -244,10 +244,10 @@ function capitalizeFirst(str) {
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 const CONFIG = {
-    // 🔧 Usar proxy en ambos entornos para evitar CORS
-    // - Localhost: proxy local (http://localhost:3000/webhook -> n8n)
-    // - Vercel: serverless function (/webhook -> /api/webhook -> n8n)
-    baseUrl: '/webhook',
+    // 🔧 Usar endpoints según el entorno
+    // - Localhost: proxy local (/webhook -> n8n)
+    // - Vercel: serverless functions individuales (/api/n8n/ -> n8n)
+    baseUrl: isLocalhost ? '/webhook' : '/api/n8n',
 
     endpoints: {
         estudiantes: '/dashboard-estudiantes',
