@@ -2221,30 +2221,15 @@ function renderizarPreguntas() {
     const tbody = document.getElementById('tbody-preguntas');
     const empty = document.getElementById('empty-preguntas');
 
-    // 🔍 DIAGNÓSTICO: Mostrar estructura completa de datos
-    console.log('════════════════════════════════════════════════════════════');
-    console.log('🔍 DIAGNÓSTICO DE PREGUNTAS - Curso:', state.cursoActual);
-    console.log('════════════════════════════════════════════════════════════');
-    console.log('📊 Total preguntas:', state.datos.preguntas.length);
-
-    if (state.datos.preguntas.length > 0) {
-        console.log('🔍 Primera pregunta (completa):', state.datos.preguntas[0]);
-        console.log('🔍 Campos disponibles:', Object.keys(state.datos.preguntas[0]));
-        console.log('🔍 Valor del campo Nombre:', state.datos.preguntas[0].Nombre);
-        console.log('🔍 Tipo de Nombre:', typeof state.datos.preguntas[0].Nombre);
-    }
-    console.log('════════════════════════════════════════════════════════════');
-
     let datos = state.datos.preguntas.filter(p => {
-        // 🔧 FIX: Buscar en múltiples campos posibles para el nombre
-        const nombre = (p.Nombre || p.nombre || p.name || p['Nombre del estudiante'] || '').toLowerCase();
-        const pregunta = (p['Preguntas Frecuentes'] || p.Pregunta || p.pregunta || '').toLowerCase();
+        // Usar el mismo campo Nombre que en Estudiantes
+        const nombre = (p.Nombre || '').toLowerCase();
+        const pregunta = (p['Preguntas Frecuentes'] || p.Pregunta || '').toLowerCase();
         return nombre.includes(state.busqueda) || pregunta.includes(state.busqueda);
     });
 
     // Ordenar por fecha más reciente
     datos.sort((a, b) => {
-        // Función para extraer timestamp de fecha ISO
         const getTimestamp = (obj) => {
             const camposFecha = [
                 obj['Fecha de Pregunta'],
@@ -2252,16 +2237,14 @@ function renderizarPreguntas() {
                 obj.Fecha,
                 obj.created_at,
                 obj.timestamp
-            ].filter(f => f); // Filtrar campos que existen
+            ].filter(f => f);
 
             if (camposFecha.length === 0) return 0;
 
             const fechaStr = camposFecha[0].toString();
-            // Extraer timestamp manualmente de formato ISO
             const match = fechaStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
             if (match) {
                 const [, año, mes, dia, hora, min, sec] = match;
-                // Crear fecha manualmente
                 return new Date(año, mes - 1, dia, hora, min, sec).getTime();
             }
             return 0;
@@ -2270,7 +2253,7 @@ function renderizarPreguntas() {
         const timestampA = getTimestamp(a);
         const timestampB = getTimestamp(b);
 
-        return timestampB - timestampA; // Orden descendente (más reciente primero)
+        return timestampB - timestampA;
     });
 
     if (datos.length === 0) {
@@ -2280,18 +2263,11 @@ function renderizarPreguntas() {
         return;
     }
 
-    // 🔍 DIAGNÓSTICO: Identificar preguntas sin nombre
-    const sinNombre = datos.filter(p => !p.Nombre || p.Nombre.trim() === '');
-    if (sinNombre.length > 0) {
-        console.warn('⚠️ Preguntas SIN nombre:', sinNombre.length, 'de', datos.length);
-    }
-
     empty.classList.remove('visible');
     const { paginados, total } = paginar(datos);
     actualizarPaginacion(total);
 
     tbody.innerHTML = paginados.map(preg => {
-        // Buscar la fecha en diferentes campos posibles (más opciones)
         const fecha = preg['Fecha de Pregunta'] ||
                       preg.fecha ||
                       preg.Fecha ||
@@ -2301,14 +2277,11 @@ function renderizarPreguntas() {
                       '';
 
         const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
-
-        // 🔧 FIX: Usar el mismo campo que en Estudiantes (preg.Nombre)
-        // Si está vacío o undefined, mostrar el Chat_id
         const nombre = preg.Nombre || '';
         const chatId = preg.Chat_id || '';
 
-        // Lógica: si hay nombre y no está vacío después de trim, usar nombre
-        const nombreMostrar = (nombre || '').trim() !== ''
+        // Si hay nombre, usarlo. Si no, usar Chat_id con estilo especial
+        const nombreMostrar = nombre.trim() !== ''
             ? nombre
             : `<span class="sin-nombre">${chatId}</span>`;
 
