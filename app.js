@@ -2174,17 +2174,29 @@ function renderizarEstudiantes() {
     const tbody = document.getElementById('tbody-estudiantes');
     const empty = document.getElementById('empty-estudiantes');
 
+    // 🔍 DIAGNÓSTICO: Mostrar estructura de datos SOLO para FOAP
+    if (state.cursoActual && state.cursoActual.toLowerCase().includes('foap')) {
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('🔍 DIAGNÓSTICO FOAP - ESTUDIANTES');
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('📊 Total estudiantes:', state.datos.estudiantes.length);
+
+        if (state.datos.estudiantes.length > 0) {
+            const primero = state.datos.estudiantes[0];
+            console.log('🔍 Primer estudiante completo:', primero);
+            console.log('🔍 Campos:', Object.keys(primero));
+            console.log('🔍 Valor de Nombre:', primero.Nombre);
+            console.log('🔍 Tipo de Nombre:', typeof primero.Nombre);
+            console.log('🔍 Valor de Chat_id:', primero.Chat_id);
+        }
+        console.log('════════════════════════════════════════════════════════════');
+    }
+
     // 🔧 FIX: Validar que Nombre exista antes de llamar toLowerCase()
     let datos = state.datos.estudiantes.filter(e => {
         const nombre = e.Nombre || '';
         return nombre.toLowerCase().includes(state.busqueda);
     });
-
-    // 🔍 DIAGNÓSTICO: Identificar estudiantes sin nombre
-    const sinNombre = datos.filter(e => !e.Nombre || e.Nombre.trim() === '');
-    if (sinNombre.length > 0) {
-        console.warn('⚠️ Estudiantes SIN nombre en tabla Estudiantes:', sinNombre);
-    }
 
     if (datos.length === 0) {
         tbody.innerHTML = '';
@@ -2228,6 +2240,24 @@ function renderizarEstudiantes() {
 function renderizarPreguntas() {
     const tbody = document.getElementById('tbody-preguntas');
     const empty = document.getElementById('empty-preguntas');
+
+    // 🔍 DIAGNÓSTICO: Mostrar estructura de datos SOLO para FOAP
+    if (state.cursoActual && state.cursoActual.toLowerCase().includes('foap')) {
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('🔍 DIAGNÓSTICO FOAP - PREGUNTAS');
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('📊 Total preguntas:', state.datos.preguntas.length);
+
+        if (state.datos.preguntas.length > 0) {
+            const primera = state.datos.preguntas[0];
+            console.log('🔍 Primera pregunta completa:', primera);
+            console.log('🔍 Campos:', Object.keys(primera));
+            console.log('🔍 Valor de Nombre:', primera.Nombre);
+            console.log('🔍 Tipo de Nombre:', typeof primera.Nombre);
+            console.log('🔍 Valor de Chat_id:', primera.Chat_id);
+        }
+        console.log('════════════════════════════════════════════════════════════');
+    }
 
     let datos = state.datos.preguntas.filter(p => {
         // Usar el mismo campo Nombre que en Estudiantes
@@ -2376,11 +2406,31 @@ function renderizarTemas() {
     const empty = document.getElementById('empty-temas');
     const chartContainer = document.getElementById('chart-temas-container');
 
+    // 🔍 DIAGNÓSTICO: Mostrar estructura de datos SOLO para FOAP
+    if (state.cursoActual && state.cursoActual.toLowerCase().includes('foap')) {
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('🔍 DIAGNÓSTICO FOAP - TEMAS');
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('📊 Total temas:', state.datos.temas.length);
+
+        if (state.datos.temas.length > 0) {
+            const primero = state.datos.temas[0];
+            console.log('🔍 Primer tema completo:', primero);
+            console.log('🔍 Campos:', Object.keys(primero));
+            console.log('🔍 Valor de Tema:', primero.Tema);
+            console.log('🔍 Tipo de Tema:', typeof primero.Tema);
+        }
+        console.log('════════════════════════════════════════════════════════════');
+    }
+
     // Agrupar y contar temas
     const temasAgrupados = {};
     state.datos.temas.forEach(t => {
-        const tema = t.Tema.toLowerCase();
-        temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
+        // 🔧 FIX: Proteger contra undefined
+        if (t.Tema) {
+            const tema = t.Tema.toLowerCase();
+            temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
+        }
     });
 
     let datos = Object.entries(temasAgrupados)
@@ -2411,7 +2461,7 @@ function renderizarTemas() {
         const porcentaje = ((tema.count / totalConsultas) * 100).toFixed(1);
         return `
             <tr class="fade-in">
-                <td><span class="tema-badge">${tema.tema}</span></td>
+                <td><span class="tema-badge">${capitalizeFirst(tema.tema)}</span></td>
                 <td><span class="contador-badge">${tema.count}</span></td>
                 <td>
                     <div class="tema-stats">
