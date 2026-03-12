@@ -237,16 +237,17 @@ function capitalizeFirst(str) {
 }
 
 // ============================================
-// CONFIGURACIÓN DE WEBHOOKS N8N (CON PROXY LOCAL)
+// CONFIGURACIÓN DE WEBHOOKS N8N
 // ============================================
-const CONFIG = {
-    // 🔄 Usar Proxy API de Vercel (recomendado)
-    // El proxy usa variables de entorno configuradas en Vercel
-    baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
 
-    // 🔄 Proxy API de Vercel (desactivado temporalmente - requiere configuración)
-    // baseUrl: '/api/n8n-proxy?path=',
-    // baseUrl: 'https://micro-bits-n8n.aejhww.easypanel.host/webhook',
+// Detectar si estamos en localhost o producción
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const CONFIG = {
+    // 🔧 Usar endpoints según el entorno
+    // - Localhost: proxy local (/webhook -> n8n)
+    // - Vercel: serverless functions individuales (/api/n8n/ -> n8n)
+    baseUrl: isLocalhost ? '/webhook' : '/api/n8n',
 
     endpoints: {
         estudiantes: '/dashboard-estudiantes',
@@ -256,9 +257,9 @@ const CONFIG = {
         cursos: '/dashboard-cursos',
         toggleEstudiante: '/toggle-estudiante',
         // 📅 Gestión de eventos del calendario
-        eventosGuardar: '/calendar-guardar-evento',
-        eventosListar: '/calendar-listar-eventos',
-        eventosEliminar: '/calendar-eliminar-evento'
+        eventosGuardar: '/Guardar-Evento',
+        eventosListar: '/obtener-eventos',
+        eventosEliminar: '/Eliminar-evento'
     },
     itemsPerPage: 10
 };
@@ -298,14 +299,49 @@ let state = {
 // ============================================
 // INICIALIZACIÓN
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     inicializarNavegacion();
-    inicializarCalendario();
     inicializarFecha();
     inicializarEventos();
     inicializarMetricasInteractivas();
     cargarCursos();
-    cargarEventosCalendario();
+
+    // Esperar a que se carguen los eventos ANTES de renderizar el calendario
+    await cargarEventosCalendario();
+
+    // Ahora renderizar el calendario (ya tenemos los eventos cargados)
+    inicializarCalendario();
+
+    // Event delegation GLOBAL para botones de editar/eliminar eventos
+    // Se agrega una sola vez al documento y maneja todos los clicks futuros
+    document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.event-action-btn.edit');
+        const deleteBtn = e.target.closest('.event-action-btn.delete');
+
+        if (editBtn) {
+            const eventId = editBtn.dataset.eventId;
+            console.log('🖊️ Click en editar evento:', eventId);
+            if (eventId) {
+                editarEvento(eventId);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+
+        if (deleteBtn) {
+            const eventId = deleteBtn.dataset.eventId;
+            console.log('🗑️ Click en eliminar evento:', eventId);
+            if (eventId) {
+                eliminarEvento(eventId);
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+    });
+
+    console.log('✅ Event delegation global configurado para botones de eventos');
 });
 
 // ============================================
@@ -327,6 +363,7 @@ function irAInicio() {
 }
 
 function irADashboard(cursoId, cursoNombre) {
+    console.log('🎯 irADashboard llamado:', { cursoId, cursoNombre });
     state.vistaActual = 'dashboard';
     state.cursoActual = cursoId;
 
@@ -342,6 +379,7 @@ function irADashboard(cursoId, cursoNombre) {
     document.getElementById('dashboard-container').classList.remove('hidden');
     document.getElementById('fab-home').classList.add('visible');
 
+    console.log('🔄 Llamando a cargarTodosDatos()...');
     // Cargar datos del curso
     cargarTodosDatos();
 }
@@ -599,14 +637,23 @@ function renderizarCalendario() {
 }
 
 function renderizarEventosDia() {
+    console.log('🔄 renderizarEventosDia() ejecutándose');
     const container = document.getElementById('events-list');
     const fecha = `${state.calendario.añoActual}-${String(state.calendario.mesActual + 1).padStart(2, '0')}-${String(state.calendario.diaSeleccionado).padStart(2, '0')}`;
+    console.log('📅 Fecha seleccionada:', fecha);
+    console.log('📅 Total de eventos en state.calendario.eventos:', state.calendario.eventos.length);
+
+    // Debug: mostrar todos los eventos y sus fechas
+    state.calendario.eventos.forEach((e, i) => {
+        console.log(`  Evento ${i + 1}: "${e.titulo}" - Fecha: "${e.fecha}" - ¿Coincide? ${e.fecha === fecha}`);
+    });
 
     // Buscar festivos
     const festivo = state.calendario.festivosCatalunya.find(f => f.fecha === fecha);
 
     // Buscar eventos del día
     const eventos = state.calendario.eventos.filter(e => e.fecha === fecha);
+    console.log('📋 Eventos encontrados para esta fecha:', eventos.length);
 
     if (!festivo && eventos.length === 0) {
         container.innerHTML = `
@@ -687,10 +734,10 @@ function renderizarEventosDia() {
                     </div>
                 </div>
                 <div class="event-item-actions">
-                    <button class="event-action-btn edit" onclick="editarEvento('${evento.id}')" title="Editar">
+                    <button class="event-action-btn edit" data-event-id="${evento.id}" title="Editar">
                         <i class="fas fa-pen"></i>
                     </button>
-                    <button class="event-action-btn delete" onclick="eliminarEvento('${evento.id}')" title="Eliminar">
+                    <button class="event-action-btn delete" data-event-id="${evento.id}" title="Eliminar">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -699,6 +746,13 @@ function renderizarEventosDia() {
     });
 
     container.innerHTML = html;
+    console.log('✅ HTML insertado en contenedor');
+
+    // Verificar que los botones existen en el DOM
+    const botonesEditar = container.querySelectorAll('.event-action-btn.edit');
+    const botonesEliminar = container.querySelectorAll('.event-action-btn.delete');
+    console.log('🔘 Botones editar encontrados:', botonesEditar.length);
+    console.log('🔘 Botones eliminar encontrados:', botonesEliminar.length);
 }
 
 function formatearFechaMostrar(fechaISO) {
@@ -713,37 +767,64 @@ function formatearFechaMostrar(fechaISO) {
 
 async function cargarEventosCalendario() {
     console.log('📅 Cargando eventos desde N8N...');
+    console.log('📡 Endpoint:', CONFIG.baseUrl + CONFIG.endpoints.eventosListar);
 
     try {
         // Intentar cargar desde N8N
-        const eventos = await fetchData(CONFIG.endpoints.eventosListar);
+        const rawData = await fetchData(CONFIG.endpoints.eventosListar);
+        console.log('📦 Respuesta de N8N:', rawData);
+        console.log('📋 Tipo de dato:', typeof rawData);
+        console.log('📋 Es array:', Array.isArray(rawData));
 
-        if (eventos && Array.isArray(eventos)) {
+        if (rawData && Array.isArray(rawData)) {
+            // Transformar datos del formato de n8n al formato interno
+            const eventos = rawData
+                .filter(row => row['Fecha'] && row['Fecha'].trim() !== '') // Filtrar eventos sin fecha
+                .map(row => ({
+                    id: String(row['ID']),
+                    titulo: row['Titulo del evento '] || 'Sin título',
+                    fecha: row['Fecha'],
+                    tipo: row['Tipo'] || 'other',
+                    descripcion: row['Descripción'] || '',
+                    curso: row['Curso'] || ''
+                }));
+
+            console.log(`✅ ${eventos.length} eventos transformados de ${rawData.length} filas`);
+            eventos.forEach((e, i) => {
+                console.log(`  Evento ${i + 1}:`, e.titulo, '-', e.fecha);
+            });
+
             state.calendario.eventos = eventos;
-            console.log(`✅ ${eventos.length} eventos cargados desde N8N`);
+
+            // Guardar en localStorage como backup
+            localStorage.setItem('microbits-calendario-eventos', JSON.stringify(eventos));
+            console.log('💾 Eventos guardados en localStorage como backup');
         } else {
-            // Si no hay eventos en N8N, intentar cargar de localStorage como fallback
+            console.warn('⚠️ La respuesta de N8N no es un array válido');
+            // Intentar cargar de localStorage como fallback
             const guardados = localStorage.getItem('microbits-calendario-eventos');
             if (guardados) {
                 state.calendario.eventos = JSON.parse(guardados);
-                console.log('⚠️ Cargados desde localStorage (fallback)');
-                // Migrar eventos a N8N
-                migrarEventosAN8N();
+                console.log('⚠️ Cargados desde localStorage (fallback):', state.calendario.eventos.length, 'eventos');
             } else {
                 state.calendario.eventos = [];
+                console.log('📭 No hay eventos en localStorage');
             }
         }
     } catch (error) {
-        console.error('❌ Error cargando eventos:', error);
+        console.error('❌ Error cargando eventos desde N8N:', error);
         // Fallback a localStorage
         const guardados = localStorage.getItem('microbits-calendario-eventos');
         if (guardados) {
             state.calendario.eventos = JSON.parse(guardados);
-            console.log('⚠️ Cargados desde localStorage (fallback tras error)');
+            console.log('⚠️ Cargados desde localStorage (fallback tras error):', state.calendario.eventos.length, 'eventos');
         } else {
             state.calendario.eventos = [];
+            console.log('📭 No hay eventos en localStorage');
         }
     }
+
+    console.log('📊 Total de eventos en state:', state.calendario.eventos.length);
 }
 
 async function guardarEventosCalendario() {
@@ -773,14 +854,17 @@ async function migrarEventosAN8N() {
 }
 
 async function guardarEventoEnN8N(evento) {
-    const url = CONFIG.baseUrl + encodeURIComponent(CONFIG.endpoints.eventosGuardar);
+    const url = CONFIG.baseUrl + CONFIG.endpoints.eventosGuardar;
 
     const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(evento)
+        body: JSON.stringify({
+            action: 'guardar',
+            evento: evento
+        })
     });
 
     if (!response.ok) {
@@ -792,14 +876,17 @@ async function guardarEventoEnN8N(evento) {
 }
 
 async function eliminarEventoDeN8N(eventoId) {
-    const url = CONFIG.baseUrl + encodeURIComponent(CONFIG.endpoints.eventosEliminar);
+    const url = CONFIG.baseUrl + CONFIG.endpoints.eventosEliminar;
 
     const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ id: eventoId })
+        body: JSON.stringify({
+            action: 'eliminar',
+            eventoId: eventoId
+        })
     });
 
     if (!response.ok) {
@@ -875,6 +962,11 @@ async function guardarEvento() {
             if (index !== -1) {
                 state.calendario.eventos[index] = evento;
             }
+
+            // Guardar en localStorage para persistencia
+            localStorage.setItem('microbits-calendario-eventos', JSON.stringify(state.calendario.eventos));
+            console.log('💾 Evento actualizado en localStorage');
+
             mostrarToast('Evento actualizado correctamente', 'success');
         } else {
             // Crear nuevo evento (en N8N)
@@ -885,6 +977,11 @@ async function guardarEvento() {
                 evento.id = resultado.id;
             }
             state.calendario.eventos.push(evento);
+
+            // Guardar en localStorage para persistencia
+            localStorage.setItem('microbits-calendario-eventos', JSON.stringify(state.calendario.eventos));
+            console.log('💾 Evento guardado en localStorage');
+
             mostrarToast('Evento creado correctamente', 'success');
         }
 
@@ -914,15 +1011,27 @@ async function eliminarEvento(id) {
         return;
     }
 
+    console.log('🗑️ Iniciando eliminación del evento:', id);
+
     // Mostrar loading
     mostrarLoading(true);
 
     try {
-        // Eliminar de N8N
-        await eliminarEventoDeN8N(id);
+        // Intentar eliminar de N8N (no bloquear si falla)
+        try {
+            await eliminarEventoDeN8N(id);
+            console.log('✅ Evento eliminado de N8N');
+        } catch (n8nError) {
+            console.warn('⚠️ No se pudo eliminar de N8N, pero se eliminará localmente:', n8nError.message);
+        }
 
-        // Actualizar estado local
+        // Actualizar estado local (SIEMPRE ejecutar)
         state.calendario.eventos = state.calendario.eventos.filter(e => e.id !== id);
+
+        // Guardar en localStorage para persistencia
+        localStorage.setItem('microbits-calendario-eventos', JSON.stringify(state.calendario.eventos));
+        console.log('💾 Evento eliminado de localStorage');
+        console.log('📋 Eventos restantes:', state.calendario.eventos.length);
 
         renderizarCalendario();
         renderizarEventosDia();
@@ -1647,17 +1756,33 @@ async function cargarTodosDatos() {
             }
         });
 
+        // 🔧 Si no hay contador pero hay preguntas, calcular contador desde preguntas
+        if (state.datos.contador.length === 0 && state.datos.preguntas.length > 0) {
+            console.log('🔧 Calculando contador desde preguntas...');
+            state.datos.contador = calcularContadorDesdePreguntas(state.datos.preguntas);
+            console.log(`✅ Contador calculado: ${state.datos.contador.length} estudiantes`);
+        }
+
         // Verificar si tenemos al menos algunos datos
         const tieneDatos = state.datos.estudiantes.length > 0 ||
                           state.datos.preguntas.length > 0 ||
-                          state.datos.temas.length > 0;
+                          state.datos.temas.length > 0 ||
+                          state.datos.contador.length > 0;
+
+        console.log('📊 tieneDatos:', tieneDatos);
+        console.log('📊 estudiantes:', state.datos.estudiantes.length);
+        console.log('📊 preguntas:', state.datos.preguntas.length);
+        console.log('📊 temas:', state.datos.temas.length);
+        console.log('📊 contador:', state.datos.contador.length);
 
         if (tieneDatos) {
+            console.log('✅ Llamando a actualizarMetricas()...');
             actualizarMetricas();
             renderizarTablaActual();
             mostrarToast('Datos actualizados correctamente', 'success');
         } else {
             // Si no hay datos de ningún endpoint, cargar ejemplos
+            console.warn('⚠️ No hay datos, cargando ejemplos...');
             cargarDatosEjemplo();
         }
     } catch (error) {
@@ -1668,6 +1793,47 @@ async function cargarTodosDatos() {
         mostrarLoading(false);
     }
 }
+
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
+
+/**
+ * Calcula el contador de preguntas por estudiante desde la lista de preguntas
+ * @param {Array} preguntas - Array de preguntas con estructura {Nombre, Chat_id, ...}
+ * @returns {Array} - Array de contador con estructura {Nombre, Chat_id, Contador}
+ */
+function calcularContadorDesdePreguntas(preguntas) {
+    // Crear mapa para contar preguntas por estudiante
+    const contadorMap = new Map();
+
+    preguntas.forEach(pregunta => {
+        const chatId = pregunta.Chat_id;
+        const nombre = pregunta.Nombre;
+
+        if (!chatId) return;
+
+        if (!contadorMap.has(chatId)) {
+            contadorMap.set(chatId, {
+                Nombre: nombre,
+                Chat_id: chatId,
+                Contador: 0
+            });
+        }
+
+        contadorMap.get(chatId).Contador++;
+    });
+
+    // Convertir mapa a array y ordenar por contador descendente
+    const contador = Array.from(contadorMap.values());
+    contador.sort((a, b) => b.Contador - a.Contador);
+
+    return contador;
+}
+
+// ============================================
+// FETCH DATA
+// ============================================
 
 async function fetchData(endpoint, params = {}) {
     // Construir URL con query params (conexión directa a N8N)
@@ -1767,24 +1933,68 @@ function cargarDatosEjemplo() {
 // MÉTRICAS
 // ============================================
 function actualizarMetricas() {
-    // Estudiantes activos (aquellos con Contador > 0)
-    const estudiantesActivos = state.datos.contador.filter(e => e.Contador > 0).length;
-    document.getElementById('estudiantes-activos').textContent = estudiantesActivos;
+    console.log('🔄 actualizarMetricas() llamado');
+    console.log('📊 state.datos:', state.datos);
 
-    // Preguntas totales (suma de todos los contadores)
-    const preguntasTotales = state.datos.contador.reduce((sum, e) => sum + (e.Contador || 0), 0);
-    document.getElementById('preguntas-totales').textContent = preguntasTotales;
+    // Validación de datos
+    if (!state.datos || !state.datos.contador) {
+        console.warn('⚠️ state.datos.contador no existe');
+        return;
+    }
 
-    // Promedio de preguntas
-    const promedio = estudiantesActivos > 0 ? (preguntasTotales / estudiantesActivos).toFixed(1) : 0;
-    document.getElementById('promedio-preguntas').textContent = promedio;
+    try {
+        // Estudiantes activos (aquellos con Contador > 0)
+        const estudiantesActivos = state.datos.contador.filter(e => e.Contador > 0).length;
+        console.log('✅ Estudiantes activos:', estudiantesActivos);
 
-    // Temas únicos consultados
-    const temasUnicos = new Set(state.datos.temas.map(t => t.Tema)).size;
-    document.getElementById('temas-consultados').textContent = temasUnicos;
+        const elEstudiantes = document.getElementById('estudiantes-activos');
+        if (elEstudiantes) {
+            elEstudiantes.textContent = estudiantesActivos;
+        } else {
+            console.error('❌ Elemento estudiantes-activos no encontrado');
+        }
 
-    // Actualizar textos de detalle en las tarjetas
-    actualizarDetalleMetricas(estudiantesActivos, preguntasTotales, promedio, temasUnicos);
+        // Preguntas totales (suma de todos los contadores)
+        const preguntasTotales = state.datos.contador.reduce((sum, e) => sum + (e.Contador || 0), 0);
+        console.log('✅ Preguntas totales:', preguntasTotales);
+
+        const elPreguntas = document.getElementById('preguntas-totales');
+        if (elPreguntas) {
+            elPreguntas.textContent = preguntasTotales;
+        } else {
+            console.error('❌ Elemento preguntas-totales no encontrado');
+        }
+
+        // Promedio de preguntas
+        const promedio = estudiantesActivos > 0 ? (preguntasTotales / estudiantesActivos).toFixed(1) : 0;
+        console.log('✅ Promedio:', promedio);
+
+        const elPromedio = document.getElementById('promedio-preguntas');
+        if (elPromedio) {
+            elPromedio.textContent = promedio;
+        } else {
+            console.error('❌ Elemento promedio-preguntas no encontrado');
+        }
+
+        // Temas únicos consultados
+        const temasUnicos = new Set(state.datos.temas.map(t => t.Tema)).size;
+        console.log('✅ Temas únicos:', temasUnicos);
+
+        const elTemas = document.getElementById('temas-consultados');
+        if (elTemas) {
+            elTemas.textContent = temasUnicos;
+        } else {
+            console.error('❌ Elemento temas-consultados no encontrado');
+        }
+
+        // Actualizar textos de detalle en las tarjetas
+        actualizarDetalleMetricas(estudiantesActivos, preguntasTotales, promedio, temasUnicos);
+
+        console.log('✅ actualizarMetricas() completado');
+    } catch (error) {
+        console.error('❌ Error en actualizarMetricas():', error);
+        mostrarToast('Error al calcular métricas', 'error');
+    }
 }
 
 function actualizarDetalleMetricas(estudiantes, preguntas, promedio, temas) {
@@ -2117,20 +2327,44 @@ function renderizarTemas() {
 // ============================================
 async function toggleEstudiante(chatId, estadoActual) {
     const toggleEl = document.querySelector(`[data-chatid="${chatId}"]`);
+    if (!toggleEl) {
+        console.error('❌ No se encontró el toggle element');
+        return;
+    }
+
     toggleEl.classList.add('loading');
+    const nuevoEstado = !estadoActual;
+
+    // Debug: Mostrar estado completo
+    console.log('='.repeat(50));
+    console.log('🔄 TOGGLE ESTUDIANTE - DEBUG INFO');
+    console.log('='.repeat(50));
+    console.log('📌 chatId:', chatId, 'Tipo:', typeof chatId);
+    console.log('📌 estadoActual:', estadoActual, 'Tipo:', typeof estadoActual);
+    console.log('📌 nuevoEstado:', nuevoEstado, 'Tipo:', typeof nuevoEstado);
+    console.log('📌 state.cursoActual:', state.cursoActual, 'Tipo:', typeof state.cursoActual);
+    console.log('📌 Select valor:', document.getElementById('curso-select')?.value);
+
+    if (!state.cursoActual) {
+        console.error('❌ ERROR: state.cursoActual está VACÍO');
+        mostrarToast('Error: No hay curso seleccionado', 'error');
+        toggleEl.classList.remove('loading');
+        return;
+    }
 
     try {
-        // Construir URL para N8N (conexión directa)
+        // Construir URL para N8N
         const url = CONFIG.baseUrl + CONFIG.endpoints.toggleEstudiante;
         const body = {
             chat_id: chatId,
-            habilitado: !estadoActual,
+            habilitado: nuevoEstado,
             curso: state.cursoActual
         };
 
-        console.log('🔄 Toggle estudiante:', url, body);
+        console.log('📡 URL completa:', url);
+        console.log('📦 Body a enviar:', JSON.stringify(body, null, 2));
 
-        await fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2138,22 +2372,38 @@ async function toggleEstudiante(chatId, estadoActual) {
             body: JSON.stringify(body)
         });
 
+        console.log('📡 Response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ Respuesta de n8n:', data);
+
         // Actualizar estado local
         const estudiante = state.datos.estudiantes.find(e => e.Chat_id === chatId);
         if (estudiante) {
-            estudiante.habilitado = !estadoActual;
+            estudiante.habilitado = nuevoEstado;
+            console.log('✅ Estudiante actualizado localmente');
         }
 
         renderizarEstudiantes();
         mostrarToast(
-            `Estudiante ${!estadoActual ? 'habilitado' : 'deshabilitado'} correctamente`,
+            `Estudiante ${nuevoEstado ? 'habilitado' : 'deshabilitado'} correctamente`,
             'success'
         );
     } catch (error) {
-        console.error('Error toggling estudiante:', error);
-        mostrarToast('Error al cambiar estado del estudiante', 'error');
-    } finally {
+        console.error('❌ Error toggling estudiante:', error);
+        mostrarToast(`Error: ${error.message}`, 'error');
+
+        // Revertir UI en caso de error
         toggleEl.classList.remove('loading');
+        return;
+    } finally {
+        if (toggleEl) {
+            toggleEl.classList.remove('loading');
+        }
     }
 }
 
