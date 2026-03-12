@@ -1743,10 +1743,12 @@ async function cargarTodosDatos() {
         ]);
 
         // Procesar cada resultado independientemente
-        state.datos.estudiantes = resultados[0].status === 'fulfilled' ? resultados[0].value : [];
-        state.datos.preguntas = resultados[1].status === 'fulfilled' ? resultados[1].value : [];
-        state.datos.temas = resultados[2].status === 'fulfilled' ? resultados[2].value : [];
-        state.datos.contador = resultados[3].status === 'fulfilled' ? resultados[3].value : [];
+        const datosCrudos = {
+            estudiantes: resultados[0].status === 'fulfilled' ? resultados[0].value : [],
+            preguntas: resultados[1].status === 'fulfilled' ? resultados[1].value : [],
+            temas: resultados[2].status === 'fulfilled' ? resultados[2].value : [],
+            contador: resultados[3].status === 'fulfilled' ? resultados[3].value : []
+        };
 
         // Mostrar errores individuales si los hay
         resultados.forEach((result, index) => {
@@ -1755,6 +1757,11 @@ async function cargarTodosDatos() {
                 console.warn(`⚠️ Error cargando ${endpoints[index]}:`, result.reason);
             }
         });
+
+        // ✅ NORMALIZAR DATOS: Asegurar que todos tengan campos correctos
+        console.log('🔧 Normalizando datos...');
+        state.datos = normalizarDatos(datosCrudos);
+        console.log('✅ Datos normalizados');
 
         // 🔧 Si no hay contador pero hay preguntas, calcular contador desde preguntas
         if (state.datos.contador.length === 0 && state.datos.preguntas.length > 0) {
@@ -1797,6 +1804,52 @@ async function cargarTodosDatos() {
 // ============================================
 // FUNCIONES AUXILIARES
 // ============================================
+
+/**
+ * Normaliza los datos recibidos de N8N para asegurar consistencia
+ * Esta función asegura que todos los registros tengan los campos necesarios
+ * @param {Object} datos - Datos crudos recibidos de N8N
+ * @returns {Object} - Datos normalizados
+ */
+function normalizarDatos(datos) {
+    const normalizados = {
+        estudiantes: [],
+        preguntas: [],
+        temas: [],
+        contador: []
+    };
+
+    // Normalizar estudiantes
+    normalizados.estudiantes = (datos.estudiantes || []).map(est => ({
+        Nombre: est.Nombre || est.nombre || est.name || '',
+        Chat_id: est.Chat_id || est.chat_id || est.chatID || '',
+        habilitado: est.habilitado !== false && est.habilitado !== 'false' && est.habilitado !== 0
+    }));
+
+    // Normalizar contador
+    normalizados.contador = (datos.contador || []).map(cont => ({
+        Nombre: cont.Nombre || cont.nombre || cont.name || '',
+        Chat_id: cont.Chat_id || cont.chat_id || cont.chatID || '',
+        Contador: cont.Contador || cont.contador || cont.count || 0
+    }));
+
+    // Normalizar preguntas
+    normalizados.preguntas = (datos.preguntas || []).map(preg => ({
+        Nombre: preg.Nombre || preg.nombre || preg.name || '',
+        Chat_id: preg.Chat_id || preg.chat_id || preg.chatID || '',
+        'Preguntas Frecuentes': preg['Preguntas Frecuentes'] || preg.Pregunta || preg.pregunta || '',
+        'Fecha de Pregunta': preg['Fecha de Pregunta'] || preg.fecha || preg.Fecha || ''
+    }));
+
+    // Normalizar temas
+    normalizados.temas = (datos.temas || []).map(tema => ({
+        Nombre: tema.Nombre || tema.nombre || tema.name || '',
+        Chat_id: tema.Chat_id || tema.chat_id || tema.chatID || '',
+        Tema: tema.Tema || tema.tema || tema.topic || ''
+    }));
+
+    return normalizados;
+}
 
 /**
  * Calcula el contador de preguntas por estudiante desde la lista de preguntas
@@ -2174,28 +2227,9 @@ function renderizarEstudiantes() {
     const tbody = document.getElementById('tbody-estudiantes');
     const empty = document.getElementById('empty-estudiantes');
 
-    // 🔍 DIAGNÓSTICO: Mostrar estructura de datos SOLO para FOAP
-    if (state.cursoActual && state.cursoActual.toLowerCase().includes('foap')) {
-        console.log('════════════════════════════════════════════════════════════');
-        console.log('🔍 DIAGNÓSTICO FOAP - ESTUDIANTES');
-        console.log('════════════════════════════════════════════════════════════');
-        console.log('📊 Total estudiantes:', state.datos.estudiantes.length);
-
-        if (state.datos.estudiantes.length > 0) {
-            const primero = state.datos.estudiantes[0];
-            console.log('🔍 Primer estudiante completo:', primero);
-            console.log('🔍 Campos:', Object.keys(primero));
-            console.log('🔍 Valor de Nombre:', primero.Nombre);
-            console.log('🔍 Tipo de Nombre:', typeof primero.Nombre);
-            console.log('🔍 Valor de Chat_id:', primero.Chat_id);
-        }
-        console.log('════════════════════════════════════════════════════════════');
-    }
-
-    // 🔧 FIX: Validar que Nombre exista antes de llamar toLowerCase()
+    // ✅ Datos ya normalizados - Nombre siempre existe (puede estar vacío)
     let datos = state.datos.estudiantes.filter(e => {
-        const nombre = e.Nombre || '';
-        return nombre.toLowerCase().includes(state.busqueda);
+        return e.Nombre.toLowerCase().includes(state.busqueda);
     });
 
     if (datos.length === 0) {
@@ -2210,8 +2244,8 @@ function renderizarEstudiantes() {
     actualizarPaginacion(total);
 
     tbody.innerHTML = paginados.map(est => {
-        // 🔧 FIX: Usar Chat_id como fallback si no hay nombre
-        const nombreMostrar = est.Nombre && est.Nombre.trim() !== ''
+        // Si hay nombre, usarlo. Si no, usar Chat_id con estilo especial
+        const nombreMostrar = est.Nombre.trim() !== ''
             ? est.Nombre
             : `<span class="sin-nombre">${est.Chat_id}</span>`;
 
@@ -2241,28 +2275,10 @@ function renderizarPreguntas() {
     const tbody = document.getElementById('tbody-preguntas');
     const empty = document.getElementById('empty-preguntas');
 
-    // 🔍 DIAGNÓSTICO: Mostrar estructura de datos SOLO para FOAP
-    if (state.cursoActual && state.cursoActual.toLowerCase().includes('foap')) {
-        console.log('════════════════════════════════════════════════════════════');
-        console.log('🔍 DIAGNÓSTICO FOAP - PREGUNTAS');
-        console.log('════════════════════════════════════════════════════════════');
-        console.log('📊 Total preguntas:', state.datos.preguntas.length);
-
-        if (state.datos.preguntas.length > 0) {
-            const primera = state.datos.preguntas[0];
-            console.log('🔍 Primera pregunta completa:', primera);
-            console.log('🔍 Campos:', Object.keys(primera));
-            console.log('🔍 Valor de Nombre:', primera.Nombre);
-            console.log('🔍 Tipo de Nombre:', typeof primera.Nombre);
-            console.log('🔍 Valor de Chat_id:', primera.Chat_id);
-        }
-        console.log('════════════════════════════════════════════════════════════');
-    }
-
+    // ✅ Datos ya normalizados - Nombre siempre existe (puede estar vacío)
     let datos = state.datos.preguntas.filter(p => {
-        // Usar el mismo campo Nombre que en Estudiantes
-        const nombre = (p.Nombre || '').toLowerCase();
-        const pregunta = (p['Preguntas Frecuentes'] || p.Pregunta || '').toLowerCase();
+        const nombre = p.Nombre.toLowerCase();
+        const pregunta = p['Preguntas Frecuentes'].toLowerCase();
         return nombre.includes(state.busqueda) || pregunta.includes(state.busqueda);
     });
 
@@ -2306,27 +2322,18 @@ function renderizarPreguntas() {
     actualizarPaginacion(total);
 
     tbody.innerHTML = paginados.map(preg => {
-        const fecha = preg['Fecha de Pregunta'] ||
-                      preg.fecha ||
-                      preg.Fecha ||
-                      preg.created_at ||
-                      preg.timestamp ||
-                      preg.date ||
-                      '';
-
-        const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
-        const nombre = preg.Nombre || '';
-        const chatId = preg.Chat_id || '';
+        const fecha = preg['Fecha de Pregunta'] || preg.fecha || preg.Fecha || '';
+        const textoPregunta = preg['Preguntas Frecuentes'] || '';
 
         // Si hay nombre, usarlo. Si no, usar Chat_id con estilo especial
-        const nombreMostrar = nombre.trim() !== ''
-            ? nombre
-            : `<span class="sin-nombre">${chatId}</span>`;
+        const nombreMostrar = preg.Nombre.trim() !== ''
+            ? preg.Nombre
+            : `<span class="sin-nombre">${preg.Chat_id}</span>`;
 
         return `
             <tr class="fade-in">
                 <td><strong>${nombreMostrar}</strong></td>
-                <td>${chatId}</td>
+                <td>${preg.Chat_id}</td>
                 <td class="pregunta-text" title="${textoPregunta}">${textoPregunta}</td>
                 <td class="fecha-tabla">${formatearFecha(fecha)}</td>
             </tr>
@@ -2406,27 +2413,10 @@ function renderizarTemas() {
     const empty = document.getElementById('empty-temas');
     const chartContainer = document.getElementById('chart-temas-container');
 
-    // 🔍 DIAGNÓSTICO: Mostrar estructura de datos SOLO para FOAP
-    if (state.cursoActual && state.cursoActual.toLowerCase().includes('foap')) {
-        console.log('════════════════════════════════════════════════════════════');
-        console.log('🔍 DIAGNÓSTICO FOAP - TEMAS');
-        console.log('════════════════════════════════════════════════════════════');
-        console.log('📊 Total temas:', state.datos.temas.length);
-
-        if (state.datos.temas.length > 0) {
-            const primero = state.datos.temas[0];
-            console.log('🔍 Primer tema completo:', primero);
-            console.log('🔍 Campos:', Object.keys(primero));
-            console.log('🔍 Valor de Tema:', primero.Tema);
-            console.log('🔍 Tipo de Tema:', typeof primero.Tema);
-        }
-        console.log('════════════════════════════════════════════════════════════');
-    }
-
+    // ✅ Datos ya normalizados - Tema siempre existe (puede estar vacío)
     // Agrupar y contar temas
     const temasAgrupados = {};
     state.datos.temas.forEach(t => {
-        // 🔧 FIX: Proteger contra undefined
         if (t.Tema) {
             const tema = t.Tema.toLowerCase();
             temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
