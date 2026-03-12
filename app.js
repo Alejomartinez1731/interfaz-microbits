@@ -1814,11 +1814,19 @@ function calcularContadorDesdePreguntas(preguntas) {
         if (!chatId) return;
 
         if (!contadorMap.has(chatId)) {
+            // 🔧 FIX: Usar Chat_id como fallback si no hay nombre
+            const nombreFinal = nombre && nombre.trim() !== '' ? nombre : null;
+
             contadorMap.set(chatId, {
-                Nombre: nombre,
+                Nombre: nombreFinal,
                 Chat_id: chatId,
                 Contador: 0
             });
+
+            // Log si no hay nombre
+            if (!nombreFinal) {
+                console.warn(`⚠️ Pregunta sin nombre para Chat_id ${chatId}:`, pregunta);
+            }
         }
 
         contadorMap.get(chatId).Contador++;
@@ -2290,9 +2298,24 @@ function renderizarActivos() {
     const empty = document.getElementById('empty-activos');
     const chartContainer = document.getElementById('chart-activos-container');
 
+    // 🔧 FIX: Validar que Nombre exista antes de filtrar
     let datos = state.datos.contador
-        .filter(e => e.Nombre.toLowerCase().includes(state.busqueda))
+        .filter(e => {
+            // Validar que Nombre existe antes de llamar toLowerCase()
+            const nombre = e.Nombre || '';
+            return nombre.toLowerCase().includes(state.busqueda);
+        })
         .sort((a, b) => b.Contador - a.Contador);
+
+    // 🔍 DIAGNÓSTICO: Identificar estudiantes sin nombre
+    const sinNombre = datos.filter(e => !e.Nombre || e.Nombre.trim() === '');
+    if (sinNombre.length > 0) {
+        console.warn('⚠️ Estudiantes SIN nombre encontrados:', sinNombre);
+        console.warn('⚠️ Posibles causas:');
+        console.warn('  - Google Sheets tiene celdas vacías en la columna Nombre');
+        console.warn('  - El formato de datos es diferente al esperado');
+        console.warn('⚠️ Mostrando Chat_id como fallback');
+    }
 
     if (datos.length === 0) {
         tbody.innerHTML = '';
@@ -2321,10 +2344,15 @@ function renderizarActivos() {
         else if (posicion === 2) posicionClass = 'silver';
         else if (posicion === 3) posicionClass = 'bronze';
 
+        // 🔧 FIX: Usar Chat_id como fallback si no hay nombre
+        const nombreMostrar = est.Nombre && est.Nombre.trim() !== ''
+            ? est.Nombre
+            : `<span class="sin-nombre">${est.Chat_id}</span>`;
+
         return `
             <tr class="fade-in">
                 <td><span class="badge-position ${posicionClass}">${posicion}</span></td>
-                <td><strong>${est.Nombre}</strong></td>
+                <td><strong>${nombreMostrar}</strong></td>
                 <td>${est.Chat_id}</td>
                 <td><span class="contador-badge">${est.Contador}</span></td>
             </tr>
