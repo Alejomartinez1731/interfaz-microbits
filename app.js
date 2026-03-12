@@ -2300,32 +2300,17 @@ function renderizarPreguntas() {
                       preg.date ||
                       '';
 
-        // Si no hay fecha, mostrar debug completo
-        if (!fecha && state.datos.preguntas.length < 5) {
-            console.log('⚠️ Pregunta sin fecha:', preg);
-        }
-
         const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
 
-        // 🔧 FIX: Buscar nombre en múltiples campos posibles
-        const nombre = preg.Nombre || preg.nombre || preg.name || preg['Nombre del estudiante'] || '';
-        const chatId = preg.Chat_id || preg.chat_id || preg.chatID || '';
+        // 🔧 FIX: Usar el mismo campo que en Estudiantes (preg.Nombre)
+        // Si está vacío o undefined, mostrar el Chat_id
+        const nombre = preg.Nombre || '';
+        const chatId = preg.Chat_id || '';
 
-        // Usar el nombre si existe, si no usar el Chat_id
-        const nombreMostrar = nombre && nombre.trim() !== ''
+        // Lógica: si hay nombre y no está vacío después de trim, usar nombre
+        const nombreMostrar = (nombre || '').trim() !== ''
             ? nombre
             : `<span class="sin-nombre">${chatId}</span>`;
-
-        // 🔍 LOG si no hay nombre
-        if (!nombre || nombre.trim() === '') {
-            console.warn('⚠️ Pregunta sin nombre - Campos:', {
-                Nombre: preg.Nombre,
-                nombre: preg.nombre,
-                name: preg.name,
-                'Nombre del estudiante': preg['Nombre del estudiante'],
-                Chat_id: chatId
-            });
-        }
 
         return `
             <tr class="fade-in">
