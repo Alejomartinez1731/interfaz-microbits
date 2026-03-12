@@ -2071,46 +2071,54 @@ function actualizarMetricas() {
 }
 
 function actualizarDetalleMetricas(estudiantes, preguntas, promedio, temas) {
-    // Estudiantes: mostrar top estudiante
-    const topEstudiante = state.datos.contador
-        .filter(e => e.Contador > 0)
-        .sort((a, b) => b.Contador - a.Contador)[0];
+    try {
+        // Estudiantes: mostrar top estudiante
+        const topEstudiante = state.datos.contador
+            .filter(e => e.Contador > 0)
+            .sort((a, b) => b.Contador - a.Contador)[0];
 
-    if (topEstudiante) {
-        document.getElementById('estudiantes-detail').textContent =
-            `Top: ${topEstudiante.Nombre.split(' ')[0]} (${topEstudiante.Contador} preguntas)`;
-    } else {
-        document.getElementById('estudiantes-detail').textContent = 'Sin actividad';
-    }
+        if (topEstudiante && topEstudiante.Nombre) {
+            const primerNombre = topEstudiante.Nombre.split ? topEstudiante.Nombre.split(' ')[0] : topEstudiante.Nombre;
+            document.getElementById('estudiantes-detail').textContent =
+                `Top: ${primerNombre} (${topEstudiante.Contador} preguntas)`;
+        } else {
+            document.getElementById('estudiantes-detail').textContent = 'Sin actividad';
+        }
 
-    // Preguntas: desglose
-    document.getElementById('preguntas-detail').textContent =
-        `${preguntas} preguntas realizadas por ${estudiantes} estudiantes`;
+        // Preguntas: desglose
+        document.getElementById('preguntas-detail').textContent =
+            `${preguntas} preguntas realizadas por ${estudiantes} estudiantes`;
 
-    // Promedio: interpretación
-    let interpretacion = '';
-    if (promedio == 0) interpretacion = 'Sin datos';
-    else if (promedio < 5) interpretacion = 'Baja participación';
-    else if (promedio < 15) interpretacion = 'Participación media';
-    else interpretacion = 'Alta participación';
+        // Promedio: interpretación
+        let interpretacion = '';
+        if (promedio == 0) interpretacion = 'Sin datos';
+        else if (promedio < 5) interpretacion = 'Baja participación';
+        else if (promedio < 15) interpretacion = 'Participación media';
+        else interpretacion = 'Alta participación';
 
-    document.getElementById('promedio-detail').textContent = interpretacion;
+        document.getElementById('promedio-detail').textContent = interpretacion;
 
-    // Temas: tema más consultado
-    const temasAgrupados = {};
-    state.datos.temas.forEach(t => {
-        const tema = t.Tema.toLowerCase();
-        temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
-    });
+        // Temas: tema más consultado
+        const temasAgrupados = {};
+        state.datos.temas.forEach(t => {
+            if (t.Tema) {
+                const tema = t.Tema.toLowerCase();
+                temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
+            }
+        });
 
-    const temaTop = Object.entries(temasAgrupados)
-        .sort((a, b) => b[1] - a[1])[0];
+        const temaTop = Object.entries(temasAgrupados)
+            .sort((a, b) => b[1] - a[1])[0];
 
-    if (temaTop) {
-        document.getElementById('temas-detail').textContent =
-            `Top: "${capitalizeFirst(temaTop[0])}" (${temaTop[1]} consultas)`;
-    } else {
-        document.getElementById('temas-detail').textContent = 'Sin datos';
+        if (temaTop) {
+            document.getElementById('temas-detail').textContent =
+                `Top: "${capitalizeFirst(temaTop[0])}" (${temaTop[1]} consultas)`;
+        } else {
+            document.getElementById('temas-detail').textContent = 'Sin datos';
+        }
+    } catch (error) {
+        console.error('❌ Error en actualizarDetalleMetricas():', error);
+        console.error('❌ Stack trace:', error.stack);
     }
 }
 
