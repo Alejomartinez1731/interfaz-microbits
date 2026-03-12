@@ -2221,17 +2221,26 @@ function renderizarPreguntas() {
     const tbody = document.getElementById('tbody-preguntas');
     const empty = document.getElementById('empty-preguntas');
 
+    // 🔍 DIAGNÓSTICO: Mostrar estructura completa de datos
+    console.log('════════════════════════════════════════════════════════════');
+    console.log('🔍 DIAGNÓSTICO DE PREGUNTAS - Curso:', state.cursoActual);
+    console.log('════════════════════════════════════════════════════════════');
+    console.log('📊 Total preguntas:', state.datos.preguntas.length);
+
+    if (state.datos.preguntas.length > 0) {
+        console.log('🔍 Primera pregunta (completa):', state.datos.preguntas[0]);
+        console.log('🔍 Campos disponibles:', Object.keys(state.datos.preguntas[0]));
+        console.log('🔍 Valor del campo Nombre:', state.datos.preguntas[0].Nombre);
+        console.log('🔍 Tipo de Nombre:', typeof state.datos.preguntas[0].Nombre);
+    }
+    console.log('════════════════════════════════════════════════════════════');
+
     let datos = state.datos.preguntas.filter(p => {
-        const nombre = (p.Nombre || '').toLowerCase();
-        const pregunta = (p['Preguntas Frecuentes'] || p.Pregunta || '').toLowerCase();
+        // 🔧 FIX: Buscar en múltiples campos posibles para el nombre
+        const nombre = (p.Nombre || p.nombre || p.name || p['Nombre del estudiante'] || '').toLowerCase();
+        const pregunta = (p['Preguntas Frecuentes'] || p.Pregunta || p.pregunta || '').toLowerCase();
         return nombre.includes(state.busqueda) || pregunta.includes(state.busqueda);
     });
-
-    // 🔍 DEBUG: Mostrar la primera pregunta para ver los campos
-    if (datos.length > 0) {
-        console.log('🔍 Campos de la primera pregunta:', datos[0]);
-        console.log('🔍 Todos los campos disponibles:', Object.keys(datos[0]));
-    }
 
     // Ordenar por fecha más reciente
     datos.sort((a, b) => {
@@ -2292,26 +2301,36 @@ function renderizarPreguntas() {
                       '';
 
         // Si no hay fecha, mostrar debug completo
-        if (!fecha) {
+        if (!fecha && state.datos.preguntas.length < 5) {
             console.log('⚠️ Pregunta sin fecha:', preg);
-            console.log('⚠️ Campos disponibles:', Object.keys(preg));
-            console.log('⚠️ Valores de todos los campos:', Object.entries(preg).reduce((obj, [key, val]) => {
-                obj[key] = val;
-                return obj;
-            }, {}));
         }
 
         const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
 
-        // 🔧 FIX: Usar Chat_id como fallback si no hay nombre
-        const nombreMostrar = preg.Nombre && preg.Nombre.trim() !== ''
-            ? preg.Nombre
-            : `<span class="sin-nombre">${preg.Chat_id}</span>`;
+        // 🔧 FIX: Buscar nombre en múltiples campos posibles
+        const nombre = preg.Nombre || preg.nombre || preg.name || preg['Nombre del estudiante'] || '';
+        const chatId = preg.Chat_id || preg.chat_id || preg.chatID || '';
+
+        // Usar el nombre si existe, si no usar el Chat_id
+        const nombreMostrar = nombre && nombre.trim() !== ''
+            ? nombre
+            : `<span class="sin-nombre">${chatId}</span>`;
+
+        // 🔍 LOG si no hay nombre
+        if (!nombre || nombre.trim() === '') {
+            console.warn('⚠️ Pregunta sin nombre - Campos:', {
+                Nombre: preg.Nombre,
+                nombre: preg.nombre,
+                name: preg.name,
+                'Nombre del estudiante': preg['Nombre del estudiante'],
+                Chat_id: chatId
+            });
+        }
 
         return `
             <tr class="fade-in">
                 <td><strong>${nombreMostrar}</strong></td>
-                <td>${preg.Chat_id}</td>
+                <td>${chatId}</td>
                 <td class="pregunta-text" title="${textoPregunta}">${textoPregunta}</td>
                 <td class="fecha-tabla">${formatearFecha(fecha)}</td>
             </tr>
