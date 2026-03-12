@@ -136,7 +136,7 @@ function inicializarGraficoActivos(datos) {
 
     // Tomar top 10 estudiantes
     const topEstudiantes = [...datos].slice(0, 10);
-    const labels = topEstudiantes.map(d => d.Nombre.split(' ')[0]); // Primer nombre
+    const labels = topEstudiantes.map(d => d.Nombre ? (d.Nombre.split ? d.Nombre.split(' ')[0] : d.Nombre) : d.Chat_id); // Primer nombre o Chat_id
     const valores = topEstudiantes.map(d => d.Contador);
 
     // Colores para el top 3
@@ -1266,7 +1266,7 @@ function generarDetallePromedio() {
 function generarDetalleTemas() {
     const temasAgrupados = {};
     state.datos.temas.forEach(t => {
-        const tema = t.Tema.toLowerCase();
+        const tema = String(t.Tema || '').toLowerCase();
         temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
     });
 
@@ -1323,7 +1323,7 @@ function crearMiniChartEstudiantes(estudiantes) {
     new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: estudiantes.slice(0, 6).map(e => e.Nombre.split(' ')[0]),
+            labels: estudiantes.slice(0, 6).map(e => e.Nombre ? (e.Nombre.split ? e.Nombre.split(' ')[0] : e.Nombre) : e.Chat_id),
             datasets: [{
                 data: estudiantes.slice(0, 6).map(e => e.Contador),
                 backgroundColor: [
@@ -1365,7 +1365,7 @@ function crearMiniChartPreguntas(estudiantes, total) {
     new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: [...top5.map(e => e.Nombre.split(' ')[0]), 'Otros'],
+            labels: [...top5.map(e => e.Nombre ? (e.Nombre.split ? e.Nombre.split(' ')[0] : e.Nombre) : e.Chat_id), 'Otros'],
             datasets: [{
                 data: [...top5.map(e => e.Contador), otros],
                 backgroundColor: [
@@ -1845,7 +1845,7 @@ function normalizarDatos(datos) {
     normalizados.temas = (datos.temas || []).map(tema => ({
         Nombre: tema.Nombre || tema.nombre || tema.name || '',
         Chat_id: tema.Chat_id || tema.chat_id || tema.chatID || '',
-        Tema: tema.Tema || tema.tema || tema.topic || ''
+        Tema: String(tema.Tema || tema.tema || tema.topic || '') // Convertir a string siempre
     }));
 
     return normalizados;
