@@ -1930,11 +1930,76 @@ function cargarDatosEjemplo() {
 }
 
 // ============================================
+// DIAGNÓSTICO DE CURSOS
+// ============================================
+
+/**
+ * Función de diagnóstico para identificar problemas con datos del curso
+ */
+function diagnosticarCurso() {
+    console.log('════════════════════════════════════════════════════════════');
+    console.log('🔍 DIAGNÓSTICO DEL CURSO:', state.cursoActual);
+    console.log('════════════════════════════════════════════════════════════');
+
+    // Resumen de datos recibidos
+    console.log('📊 RESUMEN DE DATOS:');
+    console.log(`  • Estudiantes: ${state.datos.estudiantes.length}`);
+    console.log(`  • Preguntas: ${state.datos.preguntas.length}`);
+    console.log(`  • Temas: ${state.datos.temas.length}`);
+    console.log(`  • Contador: ${state.datos.contador.length}`);
+
+    // Verificar si hay datos
+    const tieneDatos = state.datos.estudiantes.length > 0 ||
+                      state.datos.preguntas.length > 0 ||
+                      state.datos.temas.length > 0 ||
+                      state.datos.contador.length > 0;
+
+    if (!tieneDatos) {
+        console.warn('⚠️ NO SE RECIBIERON DATOS DEL CURSO');
+        console.log('');
+        console.log('📋 SOLUCIONES POSIBLES:');
+        console.log('  1. Verificar que el curso existe en Google Sheets');
+        console.log('  2. Verificar que el nombre coincida exactamente:');
+        console.log(`     - En la interfaz: "${state.cursoActual}"`);
+        console.log('     - En Google Sheets: debe ser idéntico (respetar mayúsculas/minúsculas)');
+        console.log('  3. Verificar que los workflows de N8N tienen acceso a la hoja');
+        console.log('  4. Verificar que hay datos registrados en el curso');
+        console.log('');
+        console.log('🔗 ENDPOINTS CONSULTADOS:');
+        console.log(`  • ${CONFIG.baseUrl}/dashboard-estudiantes?curso=${encodeURIComponent(state.cursoActual)}`);
+        console.log(`  • ${CONFIG.baseUrl}/dashboard-preguntas?curso=${encodeURIComponent(state.cursoActual)}`);
+        console.log(`  • ${CONFIG.baseUrl}/dashboard-temas?curso=${encodeURIComponent(state.cursoActual)}`);
+        console.log(`  • ${CONFIG.baseUrl}/dashboard-contador?curso=${encodeURIComponent(state.cursoActual)}`);
+        return;
+    }
+
+    console.log('✅ DATOS RECIBIDOS CORRECTAMENTE');
+
+    // Mostrar muestra de datos
+    if (state.datos.estudiantes.length > 0) {
+        console.log('📝 MUESTRA DE ESTUDIANTES:', state.datos.estudiantes.slice(0, 2));
+    }
+    if (state.datos.preguntas.length > 0) {
+        console.log('💬 MUESTRA DE PREGUNTAS:', state.datos.preguntas.slice(0, 2));
+    }
+    if (state.datos.contador.length > 0) {
+        console.log('📈 MUESTRA DE CONTADOR:', state.datos.contador.slice(0, 3));
+    }
+
+    console.log('════════════════════════════════════════════════════════════');
+    console.log('');
+}
+
+// ============================================
 // MÉTRICAS
 // ============================================
 function actualizarMetricas() {
     console.log('🔄 actualizarMetricas() llamado');
     console.log('📊 state.datos:', state.datos);
+    console.log('📊 Curso actual:', state.cursoActual);
+
+    // 🔍 DIAGNÓSTICO: Mostrar información del curso
+    diagnosticarCurso();
 
     // Validación de datos
     if (!state.datos || !state.datos.contador) {
