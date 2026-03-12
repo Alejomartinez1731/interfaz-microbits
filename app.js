@@ -2166,9 +2166,17 @@ function renderizarEstudiantes() {
     const tbody = document.getElementById('tbody-estudiantes');
     const empty = document.getElementById('empty-estudiantes');
 
-    let datos = state.datos.estudiantes.filter(e =>
-        e.Nombre.toLowerCase().includes(state.busqueda)
-    );
+    // 🔧 FIX: Validar que Nombre exista antes de llamar toLowerCase()
+    let datos = state.datos.estudiantes.filter(e => {
+        const nombre = e.Nombre || '';
+        return nombre.toLowerCase().includes(state.busqueda);
+    });
+
+    // 🔍 DIAGNÓSTICO: Identificar estudiantes sin nombre
+    const sinNombre = datos.filter(e => !e.Nombre || e.Nombre.trim() === '');
+    if (sinNombre.length > 0) {
+        console.warn('⚠️ Estudiantes SIN nombre en tabla Estudiantes:', sinNombre);
+    }
 
     if (datos.length === 0) {
         tbody.innerHTML = '';
@@ -2181,25 +2189,32 @@ function renderizarEstudiantes() {
     const { paginados, total } = paginar(datos);
     actualizarPaginacion(total);
 
-    tbody.innerHTML = paginados.map(est => `
-        <tr class="fade-in">
-            <td><strong>${est.Nombre}</strong></td>
-            <td>${est.Chat_id}</td>
-            <td>
-                <span class="badge ${est.habilitado !== false ? 'badge-active' : 'badge-inactive'}">
-                    ${est.habilitado !== false ? 'Habilitado' : 'Deshabilitado'}
-                </span>
-            </td>
-            <td>
-                <div class="toggle-container">
-                    <div class="toggle ${est.habilitado !== false ? 'active' : ''}"
-                         data-chatid="${est.Chat_id}"
-                         onclick="toggleEstudiante('${est.Chat_id}', ${est.habilitado !== false})">
+    tbody.innerHTML = paginados.map(est => {
+        // 🔧 FIX: Usar Chat_id como fallback si no hay nombre
+        const nombreMostrar = est.Nombre && est.Nombre.trim() !== ''
+            ? est.Nombre
+            : `<span class="sin-nombre">${est.Chat_id}</span>`;
+
+        return `
+            <tr class="fade-in">
+                <td><strong>${nombreMostrar}</strong></td>
+                <td>${est.Chat_id}</td>
+                <td>
+                    <span class="badge ${est.habilitado !== false ? 'badge-active' : 'badge-inactive'}">
+                        ${est.habilitado !== false ? 'Habilitado' : 'Deshabilitado'}
+                    </span>
+                </td>
+                <td>
+                    <div class="toggle-container">
+                        <div class="toggle ${est.habilitado !== false ? 'active' : ''}"
+                             data-chatid="${est.Chat_id}"
+                             onclick="toggleEstudiante('${est.Chat_id}', ${est.habilitado !== false})">
+                        </div>
                     </div>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderizarPreguntas() {
@@ -2256,6 +2271,12 @@ function renderizarPreguntas() {
         return;
     }
 
+    // 🔍 DIAGNÓSTICO: Identificar preguntas sin nombre
+    const sinNombre = datos.filter(p => !p.Nombre || p.Nombre.trim() === '');
+    if (sinNombre.length > 0) {
+        console.warn('⚠️ Preguntas SIN nombre:', sinNombre.length, 'de', datos.length);
+    }
+
     empty.classList.remove('visible');
     const { paginados, total } = paginar(datos);
     actualizarPaginacion(total);
@@ -2282,9 +2303,14 @@ function renderizarPreguntas() {
 
         const textoPregunta = preg['Preguntas Frecuentes'] || preg.Pregunta || '';
 
+        // 🔧 FIX: Usar Chat_id como fallback si no hay nombre
+        const nombreMostrar = preg.Nombre && preg.Nombre.trim() !== ''
+            ? preg.Nombre
+            : `<span class="sin-nombre">${preg.Chat_id}</span>`;
+
         return `
             <tr class="fade-in">
-                <td><strong>${preg.Nombre}</strong></td>
+                <td><strong>${nombreMostrar}</strong></td>
                 <td>${preg.Chat_id}</td>
                 <td class="pregunta-text" title="${textoPregunta}">${textoPregunta}</td>
                 <td class="fecha-tabla">${formatearFecha(fecha)}</td>
