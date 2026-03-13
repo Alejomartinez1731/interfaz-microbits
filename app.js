@@ -2418,17 +2418,47 @@ function renderizarTemas() {
     console.log('🔍 DIAGNÓSTICO: TEMAS CONSULTADOS');
     console.log('════════════════════════════════════════════════════════════');
     console.log('📊 Total de registros crudos:', state.datos.temas.length);
-    console.log('📋 Primeros 10 registros crudos:');
-    console.table(state.datos.temas.slice(0, 10));
+    console.log('📋 TODOS LOS REGISTROS CRUDOS (48):');
+    console.table(state.datos.temas);
+
+    // 🔍 IDENTIFICAR REGISTROS PROBLEMÁTICOS
+    const registrosInvalidos = state.datos.temas.filter((t, i) => {
+        const tema = t.Tema;
+        // Ver: vacío, solo números, o muy corto (< 3 caracteres)
+        return !tema ||
+               tema.trim() === '' ||
+               /^\d+$/.test(tema.toString()) ||
+               tema.toString().trim().length < 3;
+    });
+
+    if (registrosInvalidos.length > 0) {
+        console.log('⚠️ REGISTROS INVÁLIDOS encontrados:', registrosInvalidos.length);
+        console.table(registrosInvalidos);
+    } else {
+        console.log('✅ No se encontraron registros inválidos');
+    }
 
     // ✅ Datos ya normalizados - Tema siempre existe (puede estar vacío)
-    // Agrupar y contar temas
+    // Agrupar y contar temas (FILTRANDO INVÁLIDOS)
     const temasAgrupados = {};
     const temasCrudos = []; // Para diagnóstico
+    let temasFiltrados = 0;
 
     state.datos.temas.forEach((t, index) => {
         if (t.Tema) {
-            const tema = t.Tema.toLowerCase();
+            const temaOriginal = t.Tema.toString().trim();
+            const tema = temaOriginal.toLowerCase();
+
+            // 🔧 FILTRO: Ignorar temas inválidos
+            // - Solo números (ej: "1", "2", "3")
+            // - Menos de 3 caracteres
+            // - Vacíos después de trim
+            if (/^\d+$/.test(temaOriginal) || temaOriginal.length < 3) {
+                temasFiltrados++;
+                console.warn(`⚠️ Tema inválido filtrado [${index}]: "${temaOriginal}"`);
+                return;
+            }
+
             temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
 
             // Guardar para diagnóstico
@@ -2440,6 +2470,9 @@ function renderizarTemas() {
             });
         }
     });
+
+    console.log('🔢 Temas filtrados (inválidos):', temasFiltrados);
+    console.log('✅ Temas válidos restantes:', Object.keys(temasAgrupados).length);
 
     // Mostrar agrupación
     console.log('📊 Temas agrupados (sin ordenar):');
