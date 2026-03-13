@@ -2492,6 +2492,21 @@ function renderizarTemas() {
     console.log('📊 Consultas únicas restantes:', consultasUnicas.size);
     console.log('✅ Temas únicos:', Object.keys(temasAgrupados).length);
 
+    // 🔍 DIAGNÓSTICO: Buscar temas con tildes o caracteres especiales
+    const temasConTildes = Object.keys(temasAgrupados).filter(t =>
+        t !== t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    );
+    if (temasConTildes.length > 0) {
+        console.log('🔤 Temas con tildes/caracteres especiales:', temasConTildes);
+    }
+
+    // 🔍 DIAGNÓSTICO: Verificar si "ergonomía" está en los datos
+    const tieneErgonomia = Object.keys(temasAgrupados).some(t =>
+        t.includes('ergonom') || t.includes('ergo')
+    );
+    console.log('🔍 ¿Contiene "ergonom" o "ergo"?', tieneErgonomia);
+    console.log('🔍 Claves en temasAgrupados:', Object.keys(temasAgrupados));
+
     // Mostrar agrupación
     console.log('📊 Temas agrupados (sin ordenar):');
     console.table(Object.entries(temasAgrupados).map(([tema, count]) => ({ tema, count })));
