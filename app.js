@@ -2465,7 +2465,7 @@ function renderizarTemas() {
             if (esNumero || muyCorto) {
                 temasFiltrados++;
                 const razon = esNumero ? 'es número' : muyCorto ? 'muy corto' : 'desconocido';
-                console.warn(`⚠️ Tema inválido filtrado [${index}]: "${temaOriginal}" (razón: ${razón}, longitud: ${temaOriginal.length}, estudiante: ${t.Nombre || chatId})`);
+                console.warn(`⚠️ Tema inválido filtrado [${index}]: "${temaOriginal}" (razon: ${razon}, longitud: ${temaOriginal.length}, estudiante: ${t.Nombre || chatId})`);
                 return;
             }
 
