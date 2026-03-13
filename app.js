@@ -2459,9 +2459,13 @@ function renderizarTemas() {
             // - Solo números (ej: "1", "2", "3")
             // - Menos de 3 caracteres
             // - Vacíos después de trim
-            if (/^\d+$/.test(temaOriginal) || temaOriginal.length < 3) {
+            const esNumero = /^\d+$/.test(temaOriginal);
+            const muyCorto = temaOriginal.length < 3;
+
+            if (esNumero || muyCorto) {
                 temasFiltrados++;
-                console.warn(`⚠️ Tema inválido filtrado [${index}]: "${temaOriginal}"`);
+                const razon = esNumero ? 'es número' : muyCorto ? 'muy corto' : 'desconocido';
+                console.warn(`⚠️ Tema inválido filtrado [${index}]: "${temaOriginal}" (razón: ${razón}, longitud: ${temaOriginal.length}, estudiante: ${t.Nombre || chatId})`);
                 return;
             }
 
