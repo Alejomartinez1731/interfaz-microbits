@@ -2413,20 +2413,47 @@ function renderizarTemas() {
     const empty = document.getElementById('empty-temas');
     const chartContainer = document.getElementById('chart-temas-container');
 
+    // 🔍 DIAGNÓSTICO: Mostrar datos crudos de temas
+    console.log('════════════════════════════════════════════════════════════');
+    console.log('🔍 DIAGNÓSTICO: TEMAS CONSULTADOS');
+    console.log('════════════════════════════════════════════════════════════');
+    console.log('📊 Total de registros crudos:', state.datos.temas.length);
+    console.log('📋 Primeros 10 registros crudos:');
+    console.table(state.datos.temas.slice(0, 10));
+
     // ✅ Datos ya normalizados - Tema siempre existe (puede estar vacío)
     // Agrupar y contar temas
     const temasAgrupados = {};
-    state.datos.temas.forEach(t => {
+    const temasCrudos = []; // Para diagnóstico
+
+    state.datos.temas.forEach((t, index) => {
         if (t.Tema) {
             const tema = t.Tema.toLowerCase();
             temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
+
+            // Guardar para diagnóstico
+            temasCrudos.push({
+                index,
+                original: t.Tema,
+                lowercased: tema,
+                count: temasAgrupados[tema]
+            });
         }
     });
+
+    // Mostrar agrupación
+    console.log('📊 Temas agrupados (sin ordenar):');
+    console.table(Object.entries(temasAgrupados).map(([tema, count]) => ({ tema, count })));
 
     let datos = Object.entries(temasAgrupados)
         .map(([tema, count]) => ({ tema, count }))
         .filter(t => t.tema.includes(state.busqueda))
         .sort((a, b) => b.count - a.count);
+
+    console.log('📊 Datos finales (ordenados por count):');
+    console.table(datos.slice(0, 15)); // Mostrar top 15
+    console.log('🔍 Búsqueda activa:', `"${state.busqueda}"`);
+    console.log('📊 Total después de filtrar:', datos.length);
 
     if (datos.length === 0) {
         tbody.innerHTML = '';
@@ -2446,6 +2473,14 @@ function renderizarTemas() {
     inicializarGraficoTemas(datos);
 
     const totalConsultas = datos.reduce((sum, t) => sum + t.count, 0);
+
+    console.log('📊 Total de consultas para calcular %:', totalConsultas);
+    console.log('📊 Top 5 temas con porcentajes:');
+    datos.slice(0, 5).forEach((t, i) => {
+        const pct = ((t.count / totalConsultas) * 100).toFixed(1);
+        console.log(`  ${i + 1}. ${t.tema}: ${t.count} (${pct}%)`);
+    });
+    console.log('════════════════════════════════════════════════════════════');
 
     tbody.innerHTML = paginados.map(tema => {
         const porcentaje = ((tema.count / totalConsultas) * 100).toFixed(1);
