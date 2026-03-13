@@ -2439,15 +2439,21 @@ function renderizarTemas() {
     }
 
     // ✅ Datos ya normalizados - Tema siempre existe (puede estar vacío)
-    // Agrupar y contar temas (FILTRANDO INVÁLIDOS)
+    // Agrupar y contar temas (FILTRANDO INVÁLIDOS Y DUPLICADOS)
     const temasAgrupados = {};
     const temasCrudos = []; // Para diagnóstico
     let temasFiltrados = 0;
+
+    // 🔧 NUEVA LÓGICA: Usar Set para eliminar duplicados por estudiante+tema
+    const consultasUnicas = new Set(); // Formato: "chat_id_tema"
+    let duplicadosEliminados = 0;
 
     state.datos.temas.forEach((t, index) => {
         if (t.Tema) {
             const temaOriginal = t.Tema.toString().trim();
             const tema = temaOriginal.toLowerCase();
+            const chatId = t.Chat_id || '';
+            const claveUnica = `${chatId}_${tema}`;
 
             // 🔧 FILTRO: Ignorar temas inválidos
             // - Solo números (ej: "1", "2", "3")
@@ -2459,11 +2465,21 @@ function renderizarTemas() {
                 return;
             }
 
+            // 🔧 NUEVA LÓGICA: Des-duplicar por estudiante+tema
+            if (consultasUnicas.has(claveUnica)) {
+                duplicadosEliminados++;
+                console.warn(`🔄 Duplicado eliminado [${index}]: ${t.Nombre || chatId} - "${temaOriginal}"`);
+                return;
+            }
+
+            consultasUnicas.add(claveUnica);
             temasAgrupados[tema] = (temasAgrupados[tema] || 0) + 1;
 
             // Guardar para diagnóstico
             temasCrudos.push({
                 index,
+                chatId,
+                nombre: t.Nombre,
                 original: t.Tema,
                 lowercased: tema,
                 count: temasAgrupados[tema]
@@ -2472,7 +2488,9 @@ function renderizarTemas() {
     });
 
     console.log('🔢 Temas filtrados (inválidos):', temasFiltrados);
-    console.log('✅ Temas válidos restantes:', Object.keys(temasAgrupados).length);
+    console.log('🔄 Duplicados eliminados:', duplicadosEliminados);
+    console.log('📊 Consultas únicas restantes:', consultasUnicas.size);
+    console.log('✅ Temas únicos:', Object.keys(temasAgrupados).length);
 
     // Mostrar agrupación
     console.log('📊 Temas agrupados (sin ordenar):');
